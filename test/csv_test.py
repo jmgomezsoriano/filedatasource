@@ -81,6 +81,22 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(os.path.exists(EXCEL_FILE))
         os.remove(DATA_FILE)
         os.remove(EXCEL_FILE)
+        with ExcelWriter(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            write_registers(writer)
+        self.assertTrue(os.path.exists(EXCEL_FILE))
+        with ExcelReader(EXCEL_FILE) as reader:
+            with CsvWriter(DATA_FILE, fieldnames=reader.fieldnames) as writer:
+                writer.import_reader(reader)
+        self.assertTrue(os.path.exists(DATA_FILE))
+        os.remove(DATA_FILE)
+        os.remove(EXCEL_FILE)
+
+    def test_dict_2_object(self):
+        d = {'1': 1, 'G&S': 2}
+        with CsvWriter(DATA_FILE, fieldnames=d) as writer:
+            writer.write_dict(d)
+            writer.write_list(list(d.values()))
+        pass
 
 
 if __name__ == '__main__':

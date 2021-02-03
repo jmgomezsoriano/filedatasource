@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 /test/data.csv
 /test/data.csv.gz
+/test/data.xlsx

@@ -1,33 +1,36 @@
 from abc import ABC, ABCMeta, abstractmethod
-from collections import namedtuple
-from inspect import getmembers, isroutine
-from typing import List, Union, TextIO, BinaryIO, Any, Dict, Sequence
+from enum import Enum, unique, auto
+from typing import List, Union, TextIO, BinaryIO, Any, Dict, Sequence, Iterable
+
+from filedatasource.utils import dict2obj, attributes2list, attributes2dict, dict2list, dict_keys2list, to_identifier
+
+
+@unique
+class ReadMode(Enum):
+    OBJECT = auto()
+    DICT = auto()
+    LIST = auto()
 
 
 class DataFile(ABC):
     """
-    Abstract class for object that deals with Data files.
+    Abstract class for object that deals with data files.
     """
     __metaclass__ = ABCMeta
 
     @property
     @abstractmethod
     def fieldnames(self) -> List[str]:
-        """
-        :return: The sequence of field names to use as CSV head.
-        """
+        """ :return: The sequence of field names to use as CSV head. """
         pass
 
     @property
     def file_name(self) -> str:
-        """
-        :return: The file name.
-        """
+        """ :return: The file name. """
         return self._fname
 
     def __init__(self, file_or_io: Union[str, TextIO, BinaryIO]):
-        """
-        Constructor.
+        """ Constructor.
         :param file_or_io: The file path to the Data file.
         """
         self._fname = file_or_io if isinstance(file_or_io, str) else None
@@ -40,26 +43,8 @@ class DataFile(ABC):
 
     @abstractmethod
     def close(self) -> None:
-        """
-
-        :return:
-        """
+        """ This method is called when finishes with this object. """
         pass
-
-    @staticmethod
-    def attributes2dict(obj: Union[object]) -> Dict[str, Any]:
-        members = getmembers(obj, lambda member: not (isroutine(member)))
-        return {att[0]: att[1] for att in members if not att[0].startswith('_')}
-
-    @staticmethod
-    def attributes2list(obj: Union[object]) -> List[str]:
-        members = getmembers(obj, lambda member: not (isroutine(member)))
-        return [att[0] for att in members if not att[0].startswith('_')]
-
-    @staticmethod
-    def dict2obj(d: dict) -> object:
-        keys = [key.replace(' ', '_') for key in d.keys()]
-        return namedtuple('Row', keys)(*d.values()) if d else None
 
 
 class DataWriter(DataFile, ABC):
@@ -68,8 +53,10 @@ class DataWriter(DataFile, ABC):
     def _parse_fieldnames(self, fieldnames: Union[List[str], object]) -> List[str]:
         if isinstance(fieldnames, List):
             return fieldnames
+        if isinstance(fieldnames, dict):
+            return dict_keys2list(fieldnames)
         if isinstance(fieldnames, object):
-            return self.attributes2list(fieldnames)
+            return attributes2list(fieldnames)
         return []
 
     @abstractmethod
@@ -88,7 +75,7 @@ class DataWriter(DataFile, ABC):
 
         :param o: An object with public attributes or properties.
         """
-        self.write_row(**self.attributes2dict(o))
+        self.write_row(**attributes2dict(o))
 
     def write_rows(self, rows: Sequence[dict]) -> None:
         """
@@ -109,7 +96,7 @@ class DataWriter(DataFile, ABC):
             self.write(o)
 
     def write_list(self, l: list) -> None:
-        self.write_row(**{field: l[i] for i, field in enumerate(self.fieldnames)})
+        self.write_dict({field: l[i] for i, field in enumerate(self.fieldnames)})
 
     def import_reader(self, reader: 'DataReader'):
         for obj in reader:
@@ -118,6 +105,10 @@ class DataWriter(DataFile, ABC):
 
 class DataReader(DataFile, ABC):
     __metaclass__ = ABCMeta
+
+    def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], mode: ReadMode = ReadMode.OBJECT):
+        super().__init__(file_or_io)
+        self.__mode = mode
 
     def __iter__(self):
         return self
@@ -131,7 +122,11 @@ class DataReader(DataFile, ABC):
         :return: An Python object with fields that represents the information of the file. The name of these fields
         correspond with the name of the CSV head fields.
         """
-        return self.dict2obj(self.read_row())
+        if self.__mode == ReadMode.DICT:
+            return dict2obj(self.read_row())
+        elif self.__mode == ReadMode.OBJECT:
+            return dict2obj(self.read_row())
+        return dict2list(self.read_row())
 
     def read_objects(self) -> List[object]:
         objects = []
@@ -143,7 +138,7 @@ class DataReader(DataFile, ABC):
         return objects
 
     @abstractmethod
-    def read_row(self) -> object:
+    def read_row(self) -> dict:
         """ Read a row of the CSV file.
 
         :return: An Python object with fields that represents the information of the file. The name of these fields
