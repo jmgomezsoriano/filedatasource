@@ -2,18 +2,23 @@ import gzip
 from abc import ABC, ABCMeta
 from csv import DictWriter, DictReader
 from enum import Enum
-from inspect import getmembers, isroutine
-from typing import Sequence, Union, TextIO, BinaryIO, List
+from typing import Union, TextIO, BinaryIO, List
 
-from filedatasource.datafile import DataFile, DataReader
+from filedatasource.datafile import DataFile, DataReader, DataWriter
 
 
 class Mode(Enum):
     APPEND = 'a'
     WRITE = 'w'
+    READ = 'r'
 
 
-class Csv(DataFile, ABC):
+def open_file(fname: str, mode: Mode, encoding: str):
+    open_func = gzip.open if fname.endswith('.gz') else open
+    return open_func(fname, f'{mode.value}t', encoding=encoding, newline='')
+
+
+class CsvData(DataFile, ABC):
     """
     Abstract class for object that deals with CSV files.
     """
@@ -21,14 +26,21 @@ class Csv(DataFile, ABC):
 
     @property
     def encoding(self) -> str:
+        """
+        :return: The file encoding.
+        """
         return self.__encoding
 
-    def __init__(self, file_or_io: [str, TextIO, BinaryIO], encoding: str = 'utf-8'):
+    def __init__(self, file_or_io: [str, TextIO, BinaryIO], mode: Mode, encoding: str = 'utf-8'):
         super().__init__(file_or_io)
         self.__encoding = encoding
+        self._file = open_file(file_or_io, mode, self.encoding) if isinstance(file_or_io, str) else file_or_io
+
+    def close(self) -> None:
+        self._file.close()
 
 
-class CsvWriter(Csv):
+class CsvWriter(CsvData, DataWriter):
     """
     A CSV writer to create a typical CSV file with head. It is very easy to use, only need to
 
@@ -47,7 +59,7 @@ class CsvWriter(Csv):
         """
         return self._fieldnames
 
-    def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], fieldnames: List[str] =None,
+    def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], fieldnames: Union[List[str], type, object] = None,
                  mode: Mode = Mode.WRITE, encoding: str = 'utf-8'):
         """ Constructor of this CSV writer.
 
@@ -57,11 +69,12 @@ class CsvWriter(Csv):
         :param mode: The writing mode: Mode.APPEND or Mode.WRITE. By default Mode.WRITE.
         :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
         """
-        super().__init__(file_or_io, encoding)
-        self._fieldnames = fieldnames if fieldnames else []
-        if isinstance(file_or_io, str):
-            open_func = gzip.open if file_or_io.endswith('gz') else open
-            self._file = open_func(file_or_io, f'{mode.value}t', encoding=self.encoding)
+        if mode not in [Mode.WRITE, Mode.APPEND]:
+            raise ValueError(f'The {type(self).__name__} only allows modes {Mode.WRITE} or {Mode.APPEND}, not {mode}')
+        super().__init__(file_or_io, mode, encoding)
+        # CsvData.__init__(file_or_io, mode,  mode, encoding)
+        # super().__init__(file_or_io, mode,  mode, encoding)
+        self._fieldnames = self._parse_fieldnames(fieldnames)
 
         self._writer = DictWriter(self._file, fieldnames=self.fieldnames)
         if mode == Mode.WRITE:
@@ -74,35 +87,8 @@ class CsvWriter(Csv):
         """
         self._writer.writerow(row)
 
-    def write(self, o: object) -> None:
-        """ Write a row.
 
-        :param o: An object with public attributes or properties.
-        """
-        members = getmembers(o, lambda member: not (isroutine(member)))
-        attributes = {att[1]: att[1] for att in members if not att[0].startswith('_')}
-        self._writer.writerow(**attributes)
-
-    def write_rows(self, rows: Sequence[dict]) -> None:
-        """
-        Write a sequence of rows.
-
-        :param rows: The sequence of rows to write.
-        """
-        for row in rows:
-            self._writer.writerow(row)
-
-    def write_objects(self, objects: Sequence[object]) -> None:
-        """
-        Write a sequence of objects.
-
-        :param objects: The sequence of objects to write with public attributes or properties.
-        """
-        for o in objects:
-            self.write(o)
-
-
-class CsvReader(Csv, DataReader):
+class CsvReader(CsvData, DataReader):
     """
     A CSV reader to read a typical CSV file with head. It is very easy to use. For example, if the file 'data.csv'
     contains:
@@ -136,21 +122,19 @@ class CsvReader(Csv, DataReader):
         the compressed file is read using gzip.
         :param encoding: The encoding (it is only used if the parameter file_or_stram is a file path).
         """
-        super(CsvReader, self).__init__(file_or_io, encoding)
-        if isinstance(file_or_io, str):
-            self._file = self.__open_file(file_or_io)
-        else:
-            self._file = file_or_io
+        super(CsvReader, self).__init__(file_or_io, Mode.READ, encoding)
         self._reader = DictReader(self._file)
 
-    def __open_file(self, fname: str):
-        open_func = gzip.open if fname.endswith('.gz') else open
-        return open_func(fname, 'rt', encoding=self.encoding)
-
-    def read_row(self) -> object:
+    def read_row(self) -> dict:
         """ Read a row of the CSV file.
 
         :return: An Python object with fields that represents the information of the file. The name of these fields
         correspond with the name of the CSV head fields.
         """
         return next(self._reader)
+
+    def __len__(self) -> int:
+        if self.file_name:
+            with CsvReader(self.file_name, self.encoding) as reader:
+                return sum(1 for _ in reader)
+        return 0

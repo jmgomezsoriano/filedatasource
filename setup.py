@@ -45,7 +45,7 @@ setuptools.setup(
         'prepublish': PrepublishCommand,
     },
     name='filedatasource',
-    version='0.0.1',
+    version='1.0.0',
     url='https://github.com/jmgomezsoriano/filedatasource',
     license='GPLv3',
     author='José Manuel Gómez Soriano',
@@ -55,7 +55,7 @@ setuptools.setup(
     package_dir={'filedatasource': 'filedatasource'},
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GPLv3 License",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
