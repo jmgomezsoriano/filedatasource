@@ -1,6 +1,6 @@
 from typing import Union, List
 
-from filedatasource.datafile import DataReader, DataFile, DataWriter
+from filedatasource.datafile import DataReader, DataFile, DataWriter, ReadMode
 
 
 class ExcelData(DataFile):
@@ -24,8 +24,9 @@ class ExcelData(DataFile):
 
 
 class ExcelReader(ExcelData, DataReader):
-    def __init__(self, fname: str, sheet: Union[str, int] = None):
-        super().__init__(fname, sheet)
+    def __init__(self, fname: str, sheet: Union[str, int] = None, mode: ReadMode = ReadMode.OBJECT):
+        super(ExcelReader, self).__init__(fname, sheet=sheet)
+        DataReader.__init__(self, fname, mode=mode)
         try:
             xlrd = __import__('xlrd')
         except ImportError:
