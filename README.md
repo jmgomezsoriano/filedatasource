@@ -2,15 +2,22 @@
 Convert several file data sources (like typical CSV or Excel) to Python objects or dictionaries in an easy way.
 
 ## Install
+
+```shell script
 pip install -i https://test.pypi.org/simple/ filedatasource
+```
 
 If you want to read an Excel file, you also need to install the __xlrd__ module:
 
+```shell script
 pip install xlrd
+```
 
 And, if you want to write into an Excel file, you need to install the __xlwt__ module:
 
+```shell script
 pip install xlwt
+```
 
 ## How to use
 File data-source is a Python module that allows to extract the data form typical CSV or Excel files with the
