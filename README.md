@@ -76,13 +76,10 @@ with CsvReader('data.csv', mode=ReadMode.DICT) as reader:
 
 To read the **data.xlsx** file with the following content is very similar:
 
-```text
-+-----+-------+------------------------+
 |name |surname|address                 |
+|-----|-------|------------------------|
 |Jhon |Smith  |Oxford street           |
 |Maria|Ortega |George Washington street|
-+-----+-------+------------------------+
-```
 
 The simplest code will be:
 
@@ -283,4 +280,3 @@ with TestWriter(('data.csv', mode=Mode.APPEND) as writer:
         {'a': 13, 'b': 14, 'c': 15}
     ])
 ```
-
