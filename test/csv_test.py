@@ -1,11 +1,10 @@
 import os
 import unittest
+from typing import List
 
 from tqdm import tqdm
 
-from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader
-from filedatasource.csvfile import Mode
-from filedatasource.datafile import ReadMode
+from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode
 
 DATA_FILE = 'data.csv'
 COMPRESSED_FILE = 'data.csv.gz'
@@ -40,6 +39,12 @@ class Employee(object):
 class Example(object):
     def __init__(self, a: int, b: int, c: int):
         self.a, self.b, self.c = a, b, c
+
+
+class TestWriter(CsvWriter):
+    @property
+    def fieldnames(self) -> List[str]:
+        return ['a', 'b', 'c']
 
 
 class MyTestCase(unittest.TestCase):
@@ -167,13 +172,13 @@ class MyTestCase(unittest.TestCase):
         os.remove(DATA_FILE)
 
     def test_append(self):
-        with CsvWriter(COMPRESSED_FILE, fieldnames=['a', 'b', 'c']) as writer:
+        with TestWriter(COMPRESSED_FILE) as writer:
             writer.write_lists([
                 [1, 2, 3],
                 [4, 5, 6],
                 [7, 8, 9]
             ])
-        with CsvWriter(COMPRESSED_FILE, fieldnames=['a', 'b', 'c'], mode=Mode.APPEND) as writer:
+        with TestWriter(COMPRESSED_FILE, mode=Mode.APPEND) as writer:
             writer.write_dicts([
                 {'a': 10, 'b': 11, 'c': 12},
                 {'a': 13, 'b': 14, 'c': 15}
