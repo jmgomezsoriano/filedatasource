@@ -1,22 +1,39 @@
+from abc import ABC, ABCMeta
 from typing import Union, List
 
 from filedatasource.datafile import DataReader, DataFile, DataWriter, ReadMode
 
 
-class ExcelData(DataFile):
+class ExcelData(DataFile, ABC):
+    """ Abstract class to define the common attributes of the Excel files. """
+    __metaclass__ = ABCMeta
+
     @property
     def fieldnames(self) -> List[str]:
+        """
+        :return: The list of fieldnames.
+        """
         return self._fieldnames
 
     @property
     def sheet_name(self) -> str:
+        """
+        :return:  The sheet name.
+        """
         return self.__sheet_name
 
     @property
     def sheet(self):
+        """
+        :return: The sheet object.
+        """
         return self._sheet
 
-    def __init__(self, fname: str, sheet: Union[str, int] = None):
+    def __init__(self, fname: str, sheet: Union[str, int] = None) -> None:
+        """ Constructor.
+        :param fname: The file path to the Excel file.
+        :param sheet: The sheet to read/write.
+        """
         super().__init__(fname)
         self.__sheet_name = sheet if sheet else 0
         self._sheet = None
@@ -24,7 +41,13 @@ class ExcelData(DataFile):
 
 
 class ExcelReader(ExcelData, DataReader):
-    def __init__(self, fname: str, sheet: Union[str, int] = None, mode: ReadMode = ReadMode.OBJECT):
+    """ The class to read an Excel file easily. """
+    def __init__(self, fname: str, sheet: Union[str, int] = None, mode: ReadMode = ReadMode.OBJECT) -> None:
+        """ Constructor.
+        :param fname: The file path to the Excel file.
+        :param sheet: The sheet to read/write.
+        :param mode: The default mode to read the rows.
+        """
         super(ExcelReader, self).__init__(fname, sheet=sheet)
         DataReader.__init__(self, fname, mode=mode)
         try:
@@ -39,6 +62,10 @@ class ExcelReader(ExcelData, DataReader):
         self._fieldnames = [cell.value for cell in self.sheet.row(self.__row)]
 
     def read_row(self) -> object:
+        """ Read a row of the Excel file as a dict.
+
+        :return: A dictionary where the keys are the fieldnames, and their values the row values.
+        """
         if self.__row < self.sheet.nrows - 1:
             self.__row += 1
             row = self.sheet.row(self.__row)
@@ -46,9 +73,13 @@ class ExcelReader(ExcelData, DataReader):
         raise StopIteration()
 
     def close(self) -> None:
+        """ Nothing to do. """
         pass
 
     def __len__(self) -> int:
+        """
+        :return: The number of rows.
+        """
         return self.sheet.nrows - 1
 
 

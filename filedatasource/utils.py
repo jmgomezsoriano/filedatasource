@@ -7,7 +7,7 @@ def to_identifier(s: str) -> str:
     """ Convert a string s into an valid identifier.
     :return: A str that can be used as a Python identifier.
     """
-    s = '_' + s if s and s[0].isdigit() else s
+    s = 'n' + s if s and s[0].isdigit() else s
     return ''.join([c if c.isidentifier() or c.isdigit() else '_' for c in s])
 
 

@@ -4,6 +4,8 @@ import unittest
 from tqdm import tqdm
 
 from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader
+from filedatasource.csvfile import Mode
+from filedatasource.datafile import ReadMode
 
 DATA_FILE = 'data.csv'
 COMPRESSED_FILE = 'data.csv.gz'
@@ -33,6 +35,11 @@ class Employee(object):
     def __init__(self, name: str, surname: str):
         self.__name = name
         self.__surname = surname
+
+
+class Example(object):
+    def __init__(self, a: int, b: int, c: int):
+        self.a, self.b, self.c = a, b, c
 
 
 class MyTestCase(unittest.TestCase):
@@ -96,7 +103,87 @@ class MyTestCase(unittest.TestCase):
         with CsvWriter(DATA_FILE, fieldnames=d) as writer:
             writer.write_dict(d)
             writer.write_list(list(d.values()))
-        pass
+        with CsvReader(DATA_FILE) as reader:
+            for obj in reader:
+                pass
+        self.assertEqual(obj.n1, '1')
+        self.assertEqual(obj.G_S, '2')
+        os.remove(DATA_FILE)
+
+    def test_lists(self):
+        self.__write_lists()
+        with CsvReader(DATA_FILE) as reader:
+            lists = reader.read_lists()
+        self.assertEqual(len(lists), 8)
+        self.assertListEqual(lists[0], ['1', '2', '3'])
+        self.assertListEqual(lists[7], ['22', '23', '24'])
+        with CsvReader(DATA_FILE) as reader:
+            dicts = reader.read_rows()
+        self.assertEqual(len(dicts), 8)
+        self.assertDictEqual(dicts[0], {'a': '1', 'b': '2', 'c': '3'})
+        self.assertDictEqual(dicts[7], {'a': '22', 'b': '23', 'c': '24'})
+        with CsvReader(DATA_FILE) as reader:
+            objs = reader.read_objects()
+        self.assertEqual(len(objs), 8)
+        self.assertEqual(objs[0].a, '1')
+        self.assertEqual(objs[0].b, '2')
+        self.assertEqual(objs[0].c, '3')
+        self.assertEqual(objs[7].b, '23')
+        self.assertEqual(objs[7].c, '24')
+        os.remove(DATA_FILE)
+
+    def __write_lists(self):
+        with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            writer.write_lists([
+                [1, 2, 3],
+                [4, 5, 6],
+                [7, 8, 9]
+            ])
+            writer.write_dicts([
+                {'a': 10, 'b': 11, 'c': 12},
+                {'a': 13, 'b': 14, 'c': 15}
+            ])
+            writer.write_objects([
+                Example(16, 17, 18),
+                Example(19, 20, 21),
+                Example(22, 23, 24)
+            ])
+
+    def test_read_modes(self):
+        self.__write_lists()
+        with CsvReader(DATA_FILE, mode=ReadMode.DICT) as reader:
+            for obj in reader:
+                pass
+        self.assertDictEqual(obj, {'a': '22', 'b': '23', 'c': '24'})
+        with CsvReader(DATA_FILE, mode=ReadMode.LIST) as reader:
+            for obj in reader:
+                pass
+        self.assertListEqual(obj, ['22', '23', '24'])
+        with CsvReader(DATA_FILE, mode=ReadMode.OBJECT) as reader:
+            for obj in reader:
+                pass
+        self.assertEqual(obj.b, '23')
+        self.assertEqual(obj.c, '24')
+        os.remove(DATA_FILE)
+
+    def test_append(self):
+        with CsvWriter(COMPRESSED_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            writer.write_lists([
+                [1, 2, 3],
+                [4, 5, 6],
+                [7, 8, 9]
+            ])
+        with CsvWriter(COMPRESSED_FILE, fieldnames=['a', 'b', 'c'], mode=Mode.APPEND) as writer:
+            writer.write_dicts([
+                {'a': 10, 'b': 11, 'c': 12},
+                {'a': 13, 'b': 14, 'c': 15}
+            ])
+        with CsvReader(COMPRESSED_FILE, mode=ReadMode.OBJECT) as reader:
+            self.assertListEqual(reader.read_list(), ['1', '2', '3'])
+            for obj in reader:
+                pass
+        self.assertEqual(obj.b, '14')
+        self.assertEqual(obj.c, '15')
 
 
 if __name__ == '__main__':

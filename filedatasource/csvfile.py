@@ -4,24 +4,29 @@ from csv import DictWriter, DictReader
 from enum import Enum
 from typing import Union, TextIO, BinaryIO, List
 
-from filedatasource.datafile import DataFile, DataReader, DataWriter
+from filedatasource.datafile import DataFile, DataReader, DataWriter, ReadMode
 
 
 class Mode(Enum):
-    APPEND = 'a'
-    WRITE = 'w'
-    READ = 'r'
+    """ The file open mode. """
+    APPEND = 'a'  # To append at the end of the file.
+    WRITE = 'w'  # To start a new file, this will destroy the previous one with the same name.
+    READ = 'r'  # To read the file.
 
 
-def open_file(fname: str, mode: Mode, encoding: str):
+def open_file(fname: str, mode: Mode, encoding: str = 'utf-8'):
+    """ Method to open a file depending on if it is compress with gzip or not.
+    :param fname: The path to the file.
+    :param mode: The open mode: Mode.APPEND, Mode.WRITE or Mode.READ.
+    :param encoding: The file encoding.
+    :return: A stream.
+    """
     open_func = gzip.open if fname.endswith('.gz') else open
     return open_func(fname, f'{mode.value}t', encoding=encoding, newline='')
 
 
 class CsvData(DataFile, ABC):
-    """
-    Abstract class for object that deals with CSV files.
-    """
+    """ Abstract class for object that deals with CSV files. """
     __metaclass__ = ABCMeta
 
     @property
@@ -32,11 +37,18 @@ class CsvData(DataFile, ABC):
         return self.__encoding
 
     def __init__(self, file_or_io: [str, TextIO, BinaryIO], mode: Mode, encoding: str = 'utf-8'):
+        """ Constructor.
+
+        :param file_or_io: The file path or the file stream.
+        :param mode: The open mode: Mode.APPEND, Mode.WRITE or Mode.READ.
+        :param encoding: The file encoding.
+        """
         super().__init__(file_or_io)
         self.__encoding = encoding
         self._file = open_file(file_or_io, mode, self.encoding) if isinstance(file_or_io, str) else file_or_io
 
     def close(self) -> None:
+        """ Close the file stream. """
         self._file.close()
 
 
@@ -72,8 +84,6 @@ class CsvWriter(CsvData, DataWriter):
         if mode not in [Mode.WRITE, Mode.APPEND]:
             raise ValueError(f'The {type(self).__name__} only allows modes {Mode.WRITE} or {Mode.APPEND}, not {mode}')
         super().__init__(file_or_io, mode, encoding)
-        # CsvData.__init__(file_or_io, mode,  mode, encoding)
-        # super().__init__(file_or_io, mode,  mode, encoding)
         self._fieldnames = self._parse_fieldnames(fieldnames)
 
         self._writer = DictWriter(self._file, fieldnames=self.fieldnames)
@@ -115,7 +125,8 @@ class CsvReader(CsvData, DataReader):
         """
         return self._reader.fieldnames
 
-    def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8'):
+    def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], mode: ReadMode = ReadMode.OBJECT,
+                 encoding: str = 'utf-8'):
         """ Constructor of this CSV reader.
 
         :param file_or_io: The file path or an opened stream to use. If it is a file path and it ends in .gz, then
@@ -123,6 +134,7 @@ class CsvReader(CsvData, DataReader):
         :param encoding: The encoding (it is only used if the parameter file_or_stram is a file path).
         """
         super(CsvReader, self).__init__(file_or_io, Mode.READ, encoding)
+        DataReader.__init__(self, file_or_io, mode)
         self._reader = DictReader(self._file)
 
     def read_row(self) -> dict:
@@ -134,7 +146,11 @@ class CsvReader(CsvData, DataReader):
         return next(self._reader)
 
     def __len__(self) -> int:
+        """ Calculate the number of rows. This method
+
+        :return:
+        """
         if self.file_name:
-            with CsvReader(self.file_name, self.encoding) as reader:
+            with CsvReader(self.file_name, encoding=self.encoding) as reader:
                 return sum(1 for _ in reader)
         return 0
