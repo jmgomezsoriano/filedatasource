@@ -47,7 +47,7 @@ setuptools.setup(
     name='filedatasource',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version='1.0.4',
+    version='1.1.0',
     url='https://github.com/jmgomezsoriano/filedatasource',
     license='GPLv3',
     author='José Manuel Gómez Soriano',

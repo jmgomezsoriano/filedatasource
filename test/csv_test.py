@@ -4,11 +4,12 @@ from typing import List
 
 from tqdm import tqdm
 
-from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode
+from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode, DataWriter, DataReader
 
 DATA_FILE = 'data.csv'
 COMPRESSED_FILE = 'data.csv.gz'
 EXCEL_FILE = 'data.xlsx'
+XLS_FILE = 'data.xls'
 
 
 def write_registers(writer):
@@ -116,46 +117,62 @@ class MyTestCase(unittest.TestCase):
         os.remove(DATA_FILE)
 
     def test_lists(self):
-        self.__write_lists()
+        with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.__write_lists(writer)
         with CsvReader(DATA_FILE) as reader:
-            lists = reader.read_lists()
+            self.check_lists_csv(reader)
+        with CsvReader(DATA_FILE) as reader:
+            self.check_dicts(reader)
+        with CsvReader(DATA_FILE) as reader:
+            self.check_objects(reader)
+        os.remove(DATA_FILE)
+
+    def check_lists_csv(self, reader: DataReader):
+        lists = reader.read_lists()
         self.assertEqual(len(lists), 8)
         self.assertListEqual(lists[0], ['1', '2', '3'])
         self.assertListEqual(lists[7], ['22', '23', '24'])
-        with CsvReader(DATA_FILE) as reader:
-            dicts = reader.read_rows()
+
+    def check_lists_excel(self, reader: DataReader):
+        lists = reader.read_lists()
+        self.assertEqual(len(lists), 8)
+        self.assertListEqual(lists[0], [1, 2, 3])
+        self.assertListEqual(lists[7], [22, 23, 24])
+
+    def check_dicts(self, reader: DataReader):
+        dicts = reader.read_rows()
         self.assertEqual(len(dicts), 8)
         self.assertDictEqual(dicts[0], {'a': '1', 'b': '2', 'c': '3'})
         self.assertDictEqual(dicts[7], {'a': '22', 'b': '23', 'c': '24'})
-        with CsvReader(DATA_FILE) as reader:
-            objs = reader.read_objects()
+
+    def check_objects(self, reader: DataReader):
+        objs = reader.read_objects()
         self.assertEqual(len(objs), 8)
         self.assertEqual(objs[0].a, '1')
         self.assertEqual(objs[0].b, '2')
         self.assertEqual(objs[0].c, '3')
         self.assertEqual(objs[7].b, '23')
         self.assertEqual(objs[7].c, '24')
-        os.remove(DATA_FILE)
 
-    def __write_lists(self):
-        with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
-            writer.write_lists([
-                [1, 2, 3],
-                [4, 5, 6],
-                [7, 8, 9]
-            ])
-            writer.write_dicts([
-                {'a': 10, 'b': 11, 'c': 12},
-                {'a': 13, 'b': 14, 'c': 15}
-            ])
-            writer.write_objects([
-                Example(16, 17, 18),
-                Example(19, 20, 21),
-                Example(22, 23, 24)
-            ])
+    def __write_lists(self, writer: DataWriter):
+        writer.write_lists([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9]
+        ])
+        writer.write_dicts([
+            {'a': 10, 'b': 11, 'c': 12},
+            {'a': 13, 'b': 14, 'c': 15}
+        ])
+        writer.write_objects([
+            Example(16, 17, 18),
+            Example(19, 20, 21),
+            Example(22, 23, 24)
+        ])
 
     def test_read_modes(self):
-        self.__write_lists()
+        with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.__write_lists(writer)
         with CsvReader(DATA_FILE, mode=ReadMode.DICT) as reader:
             for obj in reader:
                 pass
@@ -189,6 +206,16 @@ class MyTestCase(unittest.TestCase):
                 pass
         self.assertEqual(obj.b, '14')
         self.assertEqual(obj.c, '15')
+
+    def test_xls_xlsx(self):
+        with ExcelWriter(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.__write_lists(writer)
+        with ExcelReader(EXCEL_FILE) as reader:
+            self.check_lists_excel(reader)
+        with ExcelWriter(XLS_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.__write_lists(writer)
+        with ExcelReader(XLS_FILE) as reader:
+            self.check_lists_excel(reader)
 
 
 if __name__ == '__main__':
