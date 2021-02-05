@@ -280,3 +280,35 @@ with TestWriter(('data.csv', mode=Mode.APPEND) as writer:
         {'a': 13, 'b': 14, 'c': 15}
     ])
 ```
+
+## Builders
+
+You have two builders to create readers or writers based on the file extension with default arguments.
+
+```python
+from filedatasource import open_reader, open_writer
+
+# Read a CSV
+with open_reader('data.csv') as reader:
+    ...
+
+# Read a compressed CSV
+with open_reader('data.csv.gz') as reader:
+    ...
+
+# Read a Excel file
+with open_reader('data.xlsx') as reader:
+   ...
+
+# Write a CSV
+with open_writer('data.csv', fieldnames=[...]) as writer:
+    ...
+
+# Write a compressed CSV
+with open_writer('data.csv.gz', fieldnames=[...]) as writer:
+    ...
+
+# Write a Excel file
+with open_writer('data.xlsx', fieldnames=[...]) as writer:
+   ...
+```

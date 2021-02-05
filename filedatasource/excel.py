@@ -83,7 +83,6 @@ class ExcelReader(ExcelData, DataReader):
         return self.sheet.nrows - 1
 
 
-
 class ExcelWriter(ExcelData, DataWriter):
 
     def __init__(self, fname: str, sheet: Union[str, int] = None, fieldnames: Union[List[str], type, object] = None,):
@@ -101,8 +100,15 @@ class ExcelWriter(ExcelData, DataWriter):
     def write_row(self, **row) -> None:
         sheet_row = self.sheet.row(self.__num_row)
         for i, field in enumerate(self.fieldnames):
-            sheet_row.write(i, row[field])
+            if field in row:
+                sheet_row.write(i, row[field])
         self.__num_row += 1
 
     def close(self) -> None:
         self._doc.save(self.file_name)
+
+    def __len__(self) -> int:
+        """
+        :return: The number of rows.
+        """
+        return self.__num_row - 1
