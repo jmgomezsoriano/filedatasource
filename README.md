@@ -4,7 +4,7 @@ Convert several file data sources (like typical CSV or Excel) to Python objects 
 ## Install
 
 ```shell script
-pip install -i https://test.pypi.org/simple/ filedatasource
+pip install filedatasource
 ```
 If you want to read an Excel file in xlsx format, you need to install the openpyxl module:
 
@@ -388,7 +388,7 @@ with open_reader('data.xlsx') as reader:
 with open_writer('data.csv', fieldnames=[...]) as writer:
     ...
 
-# Write a compressed CSV
+# Write a compressed CSV1
 with open_writer('data.csv.gz', fieldnames=[...]) as writer:
     ...
 
