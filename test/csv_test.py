@@ -4,7 +4,8 @@ from typing import List
 
 from tqdm import tqdm
 
-from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode, DataWriter, DataReader
+from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode, DataWriter, DataReader, \
+    open_reader, open_writer, excel2list, excel2dict, csv2dict, csv2objects, objects2csv, dict2csv, list2csv, csv2list
 
 DATA_FILE = 'data.csv'
 COMPRESSED_FILE = 'data.csv.gz'
@@ -62,6 +63,13 @@ class TestWriter(CsvWriter):
     @property
     def fieldnames(self) -> List[str]:
         return ['a', 'b', 'c']
+
+
+def list_to_int(lists: List[List[str]]) -> List[List[int]]:
+    r = []
+    for lst in lists:
+        r.append([int(x) for x in lst])
+    return r
 
 
 class MyTestCase(unittest.TestCase):
@@ -134,35 +142,57 @@ class MyTestCase(unittest.TestCase):
 
     def test_lists(self):
         with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
-            self.__write_lists(writer)
+            self.__write_lists_writer(writer)
         with CsvReader(DATA_FILE) as reader:
-            self.check_lists_csv(reader)
+            self.check_lists_reader(reader)
         with CsvReader(DATA_FILE) as reader:
-            self.check_dicts(reader)
+            self.check_dicts_reader(reader)
         with CsvReader(DATA_FILE) as reader:
-            self.check_objects(reader)
+            self.check_objects_reader(reader)
         os.remove(DATA_FILE)
 
-    def check_lists_csv(self, reader: DataReader):
-        lists = reader.read_lists()
+    def check_lists_csv(self, lists):
         self.assertEqual(len(lists), 8)
         self.assertListEqual(lists[0], ['1', '2', '3'])
         self.assertListEqual(lists[7], ['22', '23', '24'])
 
-    def check_lists_excel(self, reader: DataReader):
+    def check_lists_reader(self, reader: DataReader):
         lists = reader.read_lists()
+        if isinstance(reader, CsvReader):
+            self.check_lists_csv(lists)
+        else:
+            self.check_lists_excel(lists)
+
+    def check_lists_excel(self, lists):
         self.assertEqual(len(lists), 8)
         self.assertListEqual(lists[0], [1, 2, 3])
         self.assertListEqual(lists[7], [22, 23, 24])
 
-    def check_dicts(self, reader: DataReader):
+    def check_dicts_reader(self, reader: DataReader):
         dicts = reader.read_rows()
+        if isinstance(reader, CsvReader):
+            self.check_dicts_csv(dicts)
+        else:
+            self.check_dicts_excel(dicts)
+
+    def check_dicts_csv(self, dicts):
         self.assertEqual(len(dicts), 8)
         self.assertDictEqual(dicts[0], {'a': '1', 'b': '2', 'c': '3'})
         self.assertDictEqual(dicts[7], {'a': '22', 'b': '23', 'c': '24'})
 
-    def check_objects(self, reader: DataReader):
+    def check_dicts_excel(self, dicts):
+        self.assertEqual(len(dicts), 8)
+        self.assertDictEqual(dicts[0], {'a': 1, 'b': 2, 'c': 3})
+        self.assertDictEqual(dicts[7], {'a': 22, 'b': 23, 'c': 24})
+
+    def check_objects_reader(self, reader: DataReader):
         objs = reader.read_objects()
+        if isinstance(reader, CsvReader):
+            self.check_objects_csv(objs)
+        else:
+            self.check_objects_excel(objs)
+
+    def check_objects_csv(self, objs):
         self.assertEqual(len(objs), 8)
         self.assertEqual(objs[0].a, '1')
         self.assertEqual(objs[0].b, '2')
@@ -170,14 +200,22 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(objs[7].b, '23')
         self.assertEqual(objs[7].c, '24')
 
-    def __write_lists(self, writer: DataWriter):
+    def check_objects_excel(self, objs):
+        self.assertEqual(len(objs), 8)
+        self.assertEqual(objs[0].a, 1)
+        self.assertEqual(objs[0].b, 2)
+        self.assertEqual(objs[0].c, 3)
+        self.assertEqual(objs[7].b, 23)
+        self.assertEqual(objs[7].c, 24)
+
+    def __write_lists_writer(self, writer: DataWriter):
         writer.write_lists(lists)
         writer.write_dicts(dicts)
         writer.write_objects(objects)
 
     def test_read_modes(self):
         with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
-            self.__write_lists(writer)
+            self.__write_lists_writer(writer)
         with CsvReader(DATA_FILE, mode=ReadMode.DICT) as reader:
             for obj in reader:
                 pass
@@ -207,18 +245,52 @@ class MyTestCase(unittest.TestCase):
 
     def test_xls_xlsx(self):
         with ExcelWriter(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
-            self.__write_lists(writer)
+            self.__write_lists_writer(writer)
         with ExcelReader(EXCEL_FILE) as reader:
-            self.check_lists_excel(reader)
+            self.check_lists_reader(reader)
         with ExcelWriter(XLS_FILE, fieldnames=['a', 'b', 'c']) as writer:
-            self.__write_lists(writer)
+            self.__write_lists_writer(writer)
         with ExcelReader(XLS_FILE) as reader:
-            self.check_lists_excel(reader)
+            self.check_lists_reader(reader)
         os.remove(EXCEL_FILE)
         os.remove(XLS_FILE)
 
     def test_builders(self):
-        pass
+        with open_writer(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.__write_lists_writer(writer)
+        with ExcelReader(EXCEL_FILE) as reader:
+            self.check_lists_reader(reader)
+        self.check_lists_excel(excel2list(EXCEL_FILE))
+        os.remove(EXCEL_FILE)
+        with open_writer(XLS_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.__write_lists_writer(writer)
+        with ExcelReader(XLS_FILE) as reader:
+            self.check_dicts_reader(reader)
+        self.check_dicts_excel(excel2dict(XLS_FILE))
+        os.remove(XLS_FILE)
+        with open_writer(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.__write_lists_writer(writer)
+        with CsvReader(DATA_FILE) as reader:
+            self.check_objects_reader(reader)
+        self.check_objects_csv(csv2objects(DATA_FILE))
+        os.remove(DATA_FILE)
+        list2csv(COMPRESSED_FILE, lists, ['a', 'b', 'c'])
+        self.assertListEqual(lists, list_to_int(csv2list(COMPRESSED_FILE)))
+        dict2csv(COMPRESSED_FILE, dicts, ['a', 'b', 'c'])
+        r = csv2dict(COMPRESSED_FILE)
+        self.assertEqual(len(r), 2)
+        self.assertDictEqual(r[0], {'a': '10', 'b': '11', 'c': '12'})
+        self.assertDictEqual(r[1], {'a': '13', 'b': '14', 'c': '15'})
+        objects2csv(COMPRESSED_FILE, objects, ['a', 'b', 'c'])
+        with open_reader(COMPRESSED_FILE) as reader:
+            obj = next(reader)
+            self.assertEqual(obj.c, '18')
+            obj = next(reader)
+            self.assertEqual(obj.b, '20')
+            obj = next(reader)
+            self.assertEqual(obj.a, '22')
+        os.remove(COMPRESSED_FILE)
+
 
 
 if __name__ == '__main__':
