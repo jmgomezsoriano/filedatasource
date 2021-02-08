@@ -133,9 +133,12 @@ class CsvReader(CsvData, DataReader):
         the compressed file is read using gzip.
         :param encoding: The encoding (it is only used if the parameter file_or_stram is a file path).
         """
+        if mode not in [ReadMode.OBJECT, ReadMode.DICT, ReadMode.LIST]:
+            raise ValueError(f'The read mode only can be ReadMode.OBJECT, ReadMode.DICT or ReadMode.LIST, not {mode}.')
         super(CsvReader, self).__init__(file_or_io, Mode.READ, encoding)
         DataReader.__init__(self, file_or_io, mode)
         self._reader = DictReader(self._file)
+        self.__length = None
 
     def read_row(self) -> dict:
         """ Read a row of the CSV file.
@@ -146,11 +149,14 @@ class CsvReader(CsvData, DataReader):
         return next(self._reader)
 
     def __len__(self) -> int:
-        """ Calculate the number of rows. This method
+        """ Calculate the number of rows. The first time you call this method it read the whole file once and
+        it could do the algorithm a little bit slower.
 
-        :return:
+        :return: The number of rows.
         """
+        if self.__length:
+            return self.__length
         if self.file_name:
-            with CsvReader(self.file_name, encoding=self.encoding) as reader:
-                return sum(1 for _ in reader)
-        return 0
+            with CsvReader(self.file_name, ReadMode.DICT, self.encoding) as reader:
+                self.__length = sum(1 for _ in reader)
+        return self.__length
