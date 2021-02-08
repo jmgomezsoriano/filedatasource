@@ -46,7 +46,6 @@ def create_xlsx(fname: str):
 def create_xls():
     """  Create an Excel file in the old xls format importing the module.
 
-    :param fname: The path to save the xls file.
     :return: The workbook which is a instance of xlrd.book.Book class.
     """
     try:

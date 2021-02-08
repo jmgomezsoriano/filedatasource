@@ -1,6 +1,6 @@
 from abc import ABC, ABCMeta, abstractmethod
 from enum import Enum, unique, auto
-from typing import List, Union, TextIO, BinaryIO, Any, Dict, Sequence, Iterable, Callable
+from typing import List, Union, TextIO, BinaryIO, Any, Dict, Sequence, Callable
 
 from filedatasource.utils import dict2obj, attributes2list, attributes2dict, dict2list, dict_keys2list
 
@@ -51,7 +51,8 @@ class DataFile(ABC):
 class DataWriter(DataFile, ABC):
     __metaclass__ = ABCMeta
 
-    def _parse_fieldnames(self, fieldnames: Union[List[str], Dict, object]) -> List[str]:
+    @staticmethod
+    def _parse_fieldnames(fieldnames: Union[List[str], Dict, object]) -> List[str]:
         """ Convert the fieldnames if their are defined as a dict or an object with attributes or properties in
         a list of fieldnames without values.
         If this argument is already a list, then return it without any modification.
@@ -103,12 +104,12 @@ class DataWriter(DataFile, ABC):
         for row in rows:
             self.write_dict(row)
 
-    def write_object(self, object: object) -> None:
+    def write_object(self, o: object) -> None:
         """ Write an objects.
 
-        :param object: The objects to write with public attributes or properties.
+        :param o: The objects to write with public attributes or properties.
         """
-        self.write_row(**attributes2dict(object))
+        self.write_row(**attributes2dict(o))
 
     def write_objects(self, objects: Sequence[object]) -> None:
         """ Write a sequence of objects.
@@ -221,7 +222,8 @@ class DataReader(DataFile, ABC):
         """
         return self.__read_lists(self.read_object)
 
-    def __read_lists(self, func: Callable) -> List[Any]:
+    @staticmethod
+    def __read_lists(func: Callable) -> List[Any]:
         """ Call the function until it returns a StopIteration exception. Then, this method returns a list with
         the results of the each function call.
 
