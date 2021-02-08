@@ -6,14 +6,24 @@ Convert several file data sources (like typical CSV or Excel) to Python objects 
 ```shell script
 pip install -i https://test.pypi.org/simple/ filedatasource
 ```
+If you want to read an Excel file in xlsx format, you need to install the openpyxl module:
 
-If you want to read an Excel file, you also need to install the __xlrd__ module:
+```shell script
+pip install openpyxl
+```
+If you want to create an Excel file in xlsx format, you need to install the xlsxwriter module:
+
+```shell script
+pip install xlsxwriter
+```
+
+If you want to read an Excel file in old xls format, you need to install the __xlrd__ module:
 
 ```shell script
 pip install xlrd
 ```
 
-And, if you want to write into an Excel file, you need to install the __xlwt__ module:
+And, if you want to write into an old xls format, you need to install the __xlwt__ module:
 
 ```shell script
 pip install xlwt
@@ -39,6 +49,10 @@ Jhon,Smith,Oxford street
 Maria,Ortega,George Washington street 
 ```
 
+**Note**: This module does not work with different CSV formats. If you need to parse more complex files, you need to use
+Panda or native modules as openpyxl or xlsxwriter. This module is thought for parsing or generating typical data sources
+based on files in data scientists processes.
+
 ##  How to read
 
 The simplest code will be:
@@ -54,11 +68,20 @@ with CsvReader('data.csv') as reader:
 If the file name ends with .gz then, CsvReader() will decompress during the reading. 
 By default, ExcelReader or CsvReader obtain objects with the fieldnames as attributes. 
 If the field name has a character that is not valid as Python identifier, it will be replaced by _. 
-If the field name starts with a number, then the character 'n' is added at the beginning.
+If the field name starts with a number, then the character 'n' is added at the beginning. 
+For example, if you have the following data file in CSV:
 
-**Important note**: All the data extracted with CsvReader will be text.
+```text
+1d,D&D,Figures
+20,Main dice all
+...
+```
 
-If you want to get list of values or list of dictionaries, you can change the parameter mode:
+The identifier for the object attributes will be __n1d__, __D_D__ and __Figure__, respectively.
+
+**Important note**: All the data extracted with CsvReader will be of type str.
+
+If you want to get list of values or list of dictionaries instead an object, you can change the parameter __mode__:
 
 ```python
 from filedatasource import CsvReader, ReadMode
@@ -74,6 +97,7 @@ with CsvReader('data.csv', mode=ReadMode.DICT) as reader:
         print(person['name'], person['surname'], person['fullname'])
 ```
 
+Moreover, it could read xls and xlsx files using the class ExcelReader.
 To read the **data.xlsx** file with the following content is very similar:
 
 |name |surname|address                 |
@@ -91,7 +115,10 @@ with ExcelReader('data.xslx') as reader:
         print(person.name, person.surname, person.address)
 ```
 
-In both cases you can use tqdm():
+If the file name ends with **.xls** instead of **.xlsx**, this class will read it correctly too.
+
+Regardless of using CsvReader or ExcelReader, you can use the **tqdm()** method to measure the time that
+you process will take:
 
 ```python
 from filedatasource import ExcelReader, CsvReader
@@ -106,17 +133,19 @@ with CsvReader('data.xslx') as reader:
         print(person.name, person.surname, person.address)
 ```
 
-However, with the CsvReader needs previously to read the file to calculate the number of rows, and it could take a bit
-longer. This problem does not happen with the Excel file which is loaded fully in memory.
+However, the CsvReader needs, previously, to pre-read the entire file to calculate the number of rows, and it might take
+a bit longer. This problem does not occur with the Excel file because it is fully loaded into memory.
 
 ## How to write a data file
 
-With file data-source is very easy to write, both, a CSV file (compressed or not) and a Excel file. Only you need to
-use CsvWriter or ExcelWriter writing the rows by parameters, a list of values or a dictionary. For example:
+With file data-source is very easy to write, both, a CSV file (compressed or not) and a Excel file (xls or xlsx).
+Only you need to use CsvWriter or ExcelWriter writing the rows by parameters, with a list of values or 
+with a dictionary. For example:
 
 ```python
 from filedatasource import CsvWriter
 
+# Writing a row by means of parameters, a list of values or a dictionary.
 with CsvWriter('data.csv.gz', fieldnames=['a', 'b', 'c']) as writer:
     writer.write_row(a=1, b=2, c=3)
     writer.write([2, 4, 7])
@@ -134,6 +163,7 @@ class Example(object):
         self.b = b
         self.c = c
 
+# Writing with Python objects
 with CsvWriter('data.csv.gz', fieldnames=['a', 'b', 'c']) as writer:
     writer.write(Example(1, 2, 3))
     writer.write(Example(4, 5, 6))
@@ -161,17 +191,19 @@ class Employee(object):
         self.__name = name
         self.__surname = surname
 
+# Writing an object and defining the fieldnames automatically from the object property
 with CsvWriter('data.csv', fieldnames=Employee) as writer:
     writer.write(Employee('John', 'Smith'))
     writer.write(Employee('Maria', 'Ortega'))
 ```
 
-If the file 'data.csv' exists, it will be removed. In order to avoid it and add the fields at the end of the file,
-you can use the __mode__ parameter like this:
+By default, using CsvWriter class, if the file 'data.csv' exists, it will be removed.
+In order to avoid it and add the rows at the end of the file, you can use the __mode__ parameter like this:
 
 ```python
 from filedatasource import CsvWriter, Mode
 
+# Creating a CsvWriter in APPEND mode
 with CsvWriter('data.csv', mode=Mode.APPEND) as writer:
     writer.write_dicts([
         {'a': 10, 'b': 11, 'c': 12},
@@ -209,9 +241,42 @@ with CsvWriter('data.xlsx', fieldnames=['a', 'b', 'c']) as writer:
         Example(22, 23, 24)
     ])
 ```
-All these methods also work with ExcelWriter.
+All these methods also work with ExcelWriter. However, it could be written only with one line:
 
-For reading all the file, you only need to write the following:
+```python
+from filedatasource import list2csv, dict2csv, objects2csv
+from filedatasource import list2excel, dict2excel, objects2excel
+
+data_list = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+data_dict = [
+    {'a': 10, 'b': 11, 'c': 12},
+    {'a': 13, 'b': 14, 'c': 15}
+]
+data_objects = [
+    Example(16, 17, 18),
+    Example(19, 20, 21),
+    Example(22, 23, 24)
+]
+
+# Write a list of lists into a CSV file
+list2csv('data.csv', data_list, fieldnames=['a', 'b', 'c'])
+# Write a list of dicts into a CSV file
+dict2csv('data.csv', data_dict, fieldnames=['a', 'b', 'c'])
+# Write a list of objects into a CSV file
+objects2csv('data.csv', data_objects, fieldnames=['a', 'b', 'c'])
+# Write a list of lists into a Excel file
+list2excel('data.xlsx', data_list, fieldnames=['a', 'b', 'c'])
+# Write a list of dicts into a Excel file
+dict2excel('data.xlsx', data_dict, fieldnames=['a', 'b', 'c'])
+# Write a list of objects into a Excel file
+objects2excel('data.xlsx', data_objects, fieldnames=['a', 'b', 'c'])
+```
+
+For reading a whole file, you only need to write the following sentences:
 
 ```python
 from filedatasource import CsvReader, ExcelReader
@@ -233,9 +298,28 @@ with ExcelReader('data.xlsx') as reader:
 print(lists[0].name)
 ```
 
+And, you can also use the equivalent functions **list2csv()**, **dict2csv()**, **objects2csv()**,
+**list2excel()**, **dict2excel()**, and **objects2excel()**. For example:
+
+```python
+from filedatasource import csv2list, csv2dict, excel2objects
+
+# Read a whole compressed CSV file and get a list of lists
+lists = csv2list('data.csv.gz')
+print(lists[0][0])
+
+# Read a whole CSV file and obtain a list of dictionaries, with the fieldnames as key and the data the values.
+dicts = csv2dict('data.csv')
+print(lists[0]['name'])
+
+# Read a whole Excel file and obtain a list of objects, with the fieldnames as object attributes
+objs = excel2objects('data.xlsx')
+print(lists[0].name)
+```
+
 ## Convert from CSV to Excel and viceversa
 
-With this tools,it is very simply to convert from a Csv to an Excel file and viceversa:
+With these tools, it is very simply to convert from a Csv to an Excel file and viceversa:
 
 ```python
 from filedatasource import ExcelWriter, CsvReader
@@ -296,7 +380,7 @@ with open_reader('data.csv') as reader:
 with open_reader('data.csv.gz') as reader:
     ...
 
-# Read a Excel file
+# Read the first sheet from a Excel
 with open_reader('data.xlsx') as reader:
    ...
 
@@ -308,7 +392,7 @@ with open_writer('data.csv', fieldnames=[...]) as writer:
 with open_writer('data.csv.gz', fieldnames=[...]) as writer:
     ...
 
-# Write a Excel file
+# Write a Excel file creating a default sheet
 with open_writer('data.xlsx', fieldnames=[...]) as writer:
    ...
 ```

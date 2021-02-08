@@ -126,7 +126,7 @@ class DataWriter(DataFile, ABC):
         self.write_dict({field: lst[i] for i, field in enumerate(self.fieldnames)})
 
     def write_lists(self, lists: Sequence[list]) -> None:
-        """  Write a sequences of lists as a sequence of rows
+        """ Write a sequences of lists as a sequence of rows
 
         :param lists: The sequence of rows as lists.
         """

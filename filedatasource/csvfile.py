@@ -72,7 +72,7 @@ class CsvWriter(CsvData, DataWriter):
         return self._fieldnames
 
     def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], fieldnames: Union[List[str], type, object] = None,
-                 mode: Mode = Mode.WRITE, encoding: str = 'utf-8'):
+                 mode: Mode = Mode.WRITE, encoding: str = 'utf-8') -> None:
         """ Constructor of this CSV writer.
 
         :param file_or_io: The file path or an opened stream to use. If it is a file path and it ends in .gz, then

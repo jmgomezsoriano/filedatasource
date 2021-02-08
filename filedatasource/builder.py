@@ -1,6 +1,6 @@
-from typing import Union, List
+from typing import Union, List, TextIO, BinaryIO, Any, Dict
 
-from filedatasource import CsvReader, ExcelReader, CsvWriter, ExcelWriter
+from filedatasource import CsvReader, ExcelReader, CsvWriter, ExcelWriter, Mode, ReadMode
 
 
 def open_reader(fname: str) -> Union[CsvReader, ExcelReader]:
@@ -32,3 +32,124 @@ def open_writer(fname: str, fieldnames: List[str]) -> Union[CsvWriter, ExcelWrit
     if fname.endswith('.xls') or fname.endswith('.xlsx'):
         return ExcelWriter(fname, fieldnames=fieldnames)
     raise ValueError(f'The file name {fname} has to finish in .csv, .csv.gz, .xls, or .xlsx to use this function')
+
+
+def list2csv(file_or_io: Union[str, TextIO, BinaryIO], data: List[List[Any]],
+             fieldnames: Union[List[str], type, object] = None,
+             mode: Mode = Mode.WRITE, encoding: str = 'utf-8') -> None:
+    """ Write a sequences of lists as a sequence of rows in a CSV file.
+
+    :param file_or_io: The file path or an opened stream to use. If it is a file path and it ends in .gz, then
+    :param data: The sequence of rows as lists.
+    :param fieldnames: The field names of this CSV.
+    :param mode: The writing mode: Mode.APPEND or Mode.WRITE. By default Mode.WRITE.
+    :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
+    """
+    with CsvWriter(file_or_io, fieldnames, mode, encoding) as writer:
+        writer.write_lists(data)
+
+
+def dict2csv(file_or_io: Union[str, TextIO, BinaryIO], data: List[Dict],
+             fieldnames: Union[List[str], type, object] = None,
+             mode: Mode = Mode.WRITE, encoding: str = 'utf-8') -> None:
+    """ Write a list of dictionaries in a CSV file.
+
+    :param file_or_io: The file path or an opened stream to use. If it is a file path and it ends in .gz, then
+        a compressed file is created using gzip.
+    :param data: The list of dictionaries. Each dictionary has to contain as keys the fieldnames and as value
+        the row data to store.
+    :param fieldnames: The field names of this CSV.
+    :param mode: The writing mode: Mode.APPEND or Mode.WRITE. By default Mode.WRITE.
+    :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
+    """
+    with CsvWriter(file_or_io, fieldnames, mode, encoding) as writer:
+        writer.write_dicts(data)
+
+
+def objects2csv(file_or_io: Union[str, TextIO, BinaryIO], data: List[object],
+                fieldnames: Union[List[str], type, object] = None,
+                mode: Mode = Mode.WRITE, encoding: str = 'utf-8') -> None:
+    """ Write a sequence of objects in a CSV file.
+
+    :param file_or_io: The file path or an opened stream to use. If it is a file path and it ends in .gz, then
+        a compressed file is created using gzip.
+    :param data: The sequence of objects to write with public attributes or properties.
+    :param fieldnames: The field names of this CSV.
+    :param mode: The writing mode: Mode.APPEND or Mode.WRITE. By default Mode.WRITE.
+    :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
+    """
+    with CsvWriter(file_or_io, fieldnames, mode, encoding) as writer:
+        writer.write_objects(data)
+
+
+def list2excel(fname: str, data: List[List[Any]], sheet: Union[str, int] = None,
+               fieldnames: Union[List[str], type, object] = None) -> None:
+    """ Write a sequences of lists as a sequence of rows in an Excel file.
+
+    :param fname: The file path to the Excel file.
+    :param data: The sequence of rows as lists.
+    :param sheet: The sheet to write.
+    :param fieldnames: The list of fieldnames. It could be given as a list or a type or object with properties or
+    attributes.
+    """
+    with ExcelWriter(fname, sheet, fieldnames) as writer:
+        writer.write_lists(data)
+
+
+def dict2excel(fname: str, data: List[Dict], sheet: Union[str, int] = None,
+               fieldnames: Union[List[str], type, object] = None):
+    """ Write a list of dictionaries in an Excel file.
+
+    :param fname: The file path to the Excel file.
+    :param data: The list of dictionaries. Each dictionary has to contain as keys the fieldnames and as value
+        the row data to store.
+    :param sheet: The sheet to write.
+    :param fieldnames: The list of fieldnames. It could be given as a list or a type or object with properties or
+    attributes.
+    """
+    with ExcelWriter(fname, sheet, fieldnames) as writer:
+        writer.write_dicts(data)
+
+
+def objects2excel(fname: str, data: List[object], sheet: Union[str, int] = None,
+                  fieldnames: Union[List[str], type, object] = None):
+    """ Write a sequence of objects in an Excel file.
+
+    :param fname: The file path to the Excel file.
+    :param data: The sequence of objects to write with public attributes or properties.
+    :param sheet: The sheet to write.
+    :param fieldnames: The list of fieldnames. It could be given as a list or a type or object with properties or
+    attributes.
+    """
+    with ExcelWriter(fname, fieldnames, sheet) as writer:
+        writer.write_objects(data)
+
+
+def csv2list(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8') -> List[List[Any]]:
+    with CsvReader(file_or_io, ReadMode.LIST, encoding) as reader:
+        return reader.read_lists()
+
+
+def csv2dict(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8') -> List[Dict]:
+    with CsvReader(file_or_io, ReadMode.DICT, encoding) as reader:
+        return reader.read_rows()
+
+
+def csv2objects(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8') -> List[object]:
+    with CsvReader(file_or_io, ReadMode.OBJECT, encoding) as reader:
+        return reader.read_objects()
+
+
+def excel2list(fname: str, sheet: Union[str, int] = None) -> List[List[Any]]:
+    with ExcelReader(fname, sheet, ReadMode.LIST) as reader:
+        return reader.read_lists()
+
+
+def excel2dict(fname: str, sheet: Union[str, int] = None) -> List[Dict]:
+    with ExcelReader(fname, sheet, ReadMode.DICT) as reader:
+        return reader.read_rows()
+
+
+def excel2objects(fname: str, sheet: Union[str, int] = None) -> List[object]:
+    with ExcelReader(fname, sheet, ReadMode.OBJECT) as reader:
+        return reader.read_objects()

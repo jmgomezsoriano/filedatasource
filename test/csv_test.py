@@ -42,6 +42,22 @@ class Example(object):
         self.a, self.b, self.c = a, b, c
 
 
+lists = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+dicts = [
+    {'a': 10, 'b': 11, 'c': 12},
+    {'a': 13, 'b': 14, 'c': 15}
+]
+objects = [
+    Example(16, 17, 18),
+    Example(19, 20, 21),
+    Example(22, 23, 24)
+]
+
+
 class TestWriter(CsvWriter):
     @property
     def fieldnames(self) -> List[str]:
@@ -155,20 +171,9 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(objs[7].c, '24')
 
     def __write_lists(self, writer: DataWriter):
-        writer.write_lists([
-            [1, 2, 3],
-            [4, 5, 6],
-            [7, 8, 9]
-        ])
-        writer.write_dicts([
-            {'a': 10, 'b': 11, 'c': 12},
-            {'a': 13, 'b': 14, 'c': 15}
-        ])
-        writer.write_objects([
-            Example(16, 17, 18),
-            Example(19, 20, 21),
-            Example(22, 23, 24)
-        ])
+        writer.write_lists(lists)
+        writer.write_dicts(dicts)
+        writer.write_objects(objects)
 
     def test_read_modes(self):
         with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
@@ -190,16 +195,9 @@ class MyTestCase(unittest.TestCase):
 
     def test_append(self):
         with TestWriter(COMPRESSED_FILE) as writer:
-            writer.write_lists([
-                [1, 2, 3],
-                [4, 5, 6],
-                [7, 8, 9]
-            ])
+            writer.write_lists(lists)
         with TestWriter(COMPRESSED_FILE, mode=Mode.APPEND) as writer:
-            writer.write_dicts([
-                {'a': 10, 'b': 11, 'c': 12},
-                {'a': 13, 'b': 14, 'c': 15}
-            ])
+            writer.write_dicts(dicts)
         with CsvReader(COMPRESSED_FILE, mode=ReadMode.OBJECT) as reader:
             self.assertListEqual(reader.read_list(), ['1', '2', '3'])
             for obj in reader:
@@ -216,6 +214,11 @@ class MyTestCase(unittest.TestCase):
             self.__write_lists(writer)
         with ExcelReader(XLS_FILE) as reader:
             self.check_lists_excel(reader)
+        os.remove(EXCEL_FILE)
+        os.remove(XLS_FILE)
+
+    def test_builders(self):
+        pass
 
 
 if __name__ == '__main__':
