@@ -82,7 +82,7 @@ def objects2csv(file_or_io: Union[str, TextIO, BinaryIO], data: List[object],
         writer.write_objects(data)
 
 
-def list2excel(fname: str, data: List[List[Any]], sheet: Union[str, int] = None,
+def list2excel(fname: str, data: List[List[Any]], sheet: Union[str, int] = 0,
                fieldnames: Union[List[str], type, object] = None) -> None:
     """ Write a sequences of lists as a sequence of rows in an Excel file.
 
@@ -96,8 +96,8 @@ def list2excel(fname: str, data: List[List[Any]], sheet: Union[str, int] = None,
         writer.write_lists(data)
 
 
-def dict2excel(fname: str, data: List[Dict], sheet: Union[str, int] = None,
-               fieldnames: Union[List[str], type, object] = None):
+def dict2excel(fname: str, data: List[Dict], sheet: Union[str, int] = 0,
+               fieldnames: Union[List[str], type, object] = None) -> None:
     """ Write a list of dictionaries in an Excel file.
 
     :param fname: The file path to the Excel file.
@@ -111,8 +111,8 @@ def dict2excel(fname: str, data: List[Dict], sheet: Union[str, int] = None,
         writer.write_dicts(data)
 
 
-def objects2excel(fname: str, data: List[object], sheet: Union[str, int] = None,
-                  fieldnames: Union[List[str], type, object] = None):
+def objects2excel(fname: str, data: List[object], sheet: Union[str, int] = 0,
+                  fieldnames: Union[List[str], type, object] = None) -> None:
     """ Write a sequence of objects in an Excel file.
 
     :param fname: The file path to the Excel file.
@@ -126,30 +126,68 @@ def objects2excel(fname: str, data: List[object], sheet: Union[str, int] = None,
 
 
 def csv2list(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8') -> List[List[Any]]:
+    """ Read a CSV file (compressed or not) and return a list of lists with the file rows.
+
+    :param file_or_io: The file path or the file stream.
+    :param encoding: The file encoding.
+    :return: A List of lists with the file rows. Each column value is stored as list element.
+    """
     with CsvReader(file_or_io, ReadMode.LIST, encoding) as reader:
         return reader.read_lists()
 
 
 def csv2dict(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8') -> List[Dict]:
+    """ Read a CSV file (compressed or not) and return a list of dictionaries with the file content..
+
+    :param file_or_io: The file path or the file stream.
+    :param encoding: The file encoding.
+    :return: A list of dictionaries. Each dictionary represents a row and it contains as keys the column name and
+    its value the column value.
+    """
     with CsvReader(file_or_io, ReadMode.DICT, encoding) as reader:
         return reader.read_rows()
 
 
 def csv2objects(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8') -> List[object]:
+    """ Read a CSV file (compressed or not) and return a list of objects.
+
+    :param file_or_io: The file path or the file stream.
+    :param encoding: The file encoding.
+    :return: A list of objects. Each object is a file row with the attributes as column names and its value.
+    """
     with CsvReader(file_or_io, ReadMode.OBJECT, encoding) as reader:
         return reader.read_objects()
 
 
-def excel2list(fname: str, sheet: Union[str, int] = None) -> List[List[Any]]:
+def excel2list(fname: str, sheet: Union[str, int] = 0) -> List[List[Any]]:
+    """ Read a Excel file (xlsx or xls) and return a list of lists with the file rows.
+
+    :param fname: The file path to the Excel file..
+    :param sheet: The sheet name or the sheet number (starting by 0).
+    :return: A List of lists with the file rows. Each column value is stored as list element.
+    """
     with ExcelReader(fname, sheet, ReadMode.LIST) as reader:
         return reader.read_lists()
 
 
-def excel2dict(fname: str, sheet: Union[str, int] = None) -> List[Dict]:
+def excel2dict(fname: str, sheet: Union[str, int] = 0) -> List[Dict]:
+    """ Read a Excel file (xlsx or xls) and return a list of dictionaries with the file content..
+
+    :param fname: The file path to the Excel file.
+    :param sheet: The sheet name or the sheet number (starting by 0).
+    :return: A list of dictionaries. Each dictionary represents a row and it contains as keys the column name and
+    its value the column value.
+    """
     with ExcelReader(fname, sheet, ReadMode.DICT) as reader:
         return reader.read_rows()
 
 
-def excel2objects(fname: str, sheet: Union[str, int] = None) -> List[object]:
+def excel2objects(fname: str, sheet: Union[str, int] = 0) -> List[object]:
+    """ Read a Excel file (xlsx or xls) and return a list of objects.
+
+    :param fname: The file path to the Excel file.
+    :param sheet: The sheet name or the sheet number (starting by 0).
+    :return: A list of objects. Each object is a file row with the attributes as column names and its value.
+    """
     with ExcelReader(fname, sheet, ReadMode.OBJECT) as reader:
         return reader.read_objects()

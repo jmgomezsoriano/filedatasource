@@ -93,7 +93,7 @@ class ExcelData(DataFile, ABC):
 
 class ExcelReader(ExcelData, DataReader):
     """ The class to read an Excel file easily. """
-    def __init__(self, fname: str, sheet: Union[str, int] = None, mode: ReadMode = ReadMode.OBJECT) -> None:
+    def __init__(self, fname: str, sheet: Union[str, int] = 0, mode: ReadMode = ReadMode.OBJECT) -> None:
         """ Constructor.
         :param fname: The file path to the Excel file.
         :param sheet: The sheet to read/write.
@@ -103,12 +103,13 @@ class ExcelReader(ExcelData, DataReader):
         DataReader.__init__(self, fname, mode=mode)
         if fname.endswith('.xlsx'):
             self.__doc = open_xlsx(fname)
-            self._sheet = self.__doc.sheet_by_name(sheet) if isinstance(sheet, str) else self.__doc.active
+            self._sheet = self.__doc[sheet] if isinstance(sheet, str) else self.__doc[self.__doc.sheetnames[sheet]]
             self._fieldnames = [cell.value for cell in next(self.sheet.rows)]
             self.__type = 'xlsx'
         elif fname.endswith('.xls'):
-            self.__doc = open_xls(fname)
-            self._sheet = self.__doc.sheet_by_name(sheet) if sheet else self.__doc.sheet_by_index(0)
+            doc = open_xls(fname)
+            self.__doc = doc
+            self._sheet = doc.sheet_by_name(sheet) if isinstance(sheet, str) else doc.sheet_by_index(sheet)
             self._fieldnames = [cell.value for cell in self.sheet.row(0)]
             self.__type = 'xls'
         else:

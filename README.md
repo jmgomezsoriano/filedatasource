@@ -213,6 +213,32 @@ with CsvWriter('data.csv', mode=Mode.APPEND) as writer:
 
 The __mode__ parameter can only be used in CSV files and not in Excel files.
 
+## Working with Excel sheets
+
+__ExcelReader__ only works with one Excel sheet at a time. You can select the sheet to read using the parameter 
+__sheet__ both using the sheet name or the sheet number (starting by 0). For eample:
+
+```python
+from filedatasource import ExcelReader
+
+# Reading the first sheet of the file 'Example.xls'
+with ExcelReader('Example.xls', sheet=0) as reader:
+    for row in reader:
+        print(row)
+# Reading the second sheet of the file 'Example.xls'
+with ExcelReader('Example.xls', sheet=1) as reader:
+    for row in reader:
+        print(row)
+# Reading the sheet named 'Clients' of the file 'Example.xls'
+with ExcelReader('Example.xls', sheet='Clients') as reader:
+    for row in reader:
+        print(row)
+# Reading the sheet named 'Suppliers' of the file 'Example.xls'
+with ExcelReader('Example.xls', sheet='Suppliers') as reader:
+    for row in reader:
+        print(row)
+```
+
 ## Reading and writing whole files
 
 With __file datasource__ you can read or write a whole data file in two lines using __DataWriter.write_lists()__,

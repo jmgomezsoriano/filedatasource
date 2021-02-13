@@ -291,6 +291,60 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(obj.a, '22')
         os.remove(COMPRESSED_FILE)
 
+    def test_sheets(self) -> None:
+        with ExcelReader('Example.xls', sheet=0) as reader:
+            self.check_clients_sheet(reader)
+        with ExcelReader('Example.xls', sheet=1) as reader:
+            self.check_suppliers_sheet(reader)
+        with ExcelReader('Example.xls', sheet='Clients') as reader:
+            self.check_clients_sheet(reader)
+        with ExcelReader('Example.xls', sheet='Suppliers') as reader:
+            self.check_suppliers_sheet(reader)
+        with ExcelReader('Example.xlsx', sheet=0) as reader:
+            self.check_clients_sheet(reader)
+        with ExcelReader('Example.xlsx', sheet=1) as reader:
+            self.check_suppliers_sheet(reader)
+        with ExcelReader('Example.xlsx', sheet='Clients') as reader:
+            self.check_clients_sheet(reader)
+        with ExcelReader('Example.xlsx', sheet='Suppliers') as reader:
+            self.check_suppliers_sheet(reader)
+
+    def check_clients_sheet(self, reader: DataReader) -> None:
+        row = next(reader)
+        self.assertEqual(row.Name, 'John')
+        self.assertEqual(row.Surname, 'Smith')
+        self.assertEqual(row.Email, 'johnsmith@example.com')
+        self.assertEqual(row.Phone, 72123423)
+        row = next(reader)
+        self.assertEqual(row.Name, 'Maria')
+        self.assertEqual(row.Surname, 'Ortega')
+        self.assertEqual(row.Email, 'mariaortega@example.com')
+        self.assertEqual(row.Phone, 72112234)
+
+    def check_suppliers_sheet(self, reader: DataReader) -> None:
+        row = next(reader)
+        self.assertEqual(row.Name, 'Bill')
+        self.assertEqual(row.Surname, 'Gates')
+        self.assertEqual(row.Company, 'Microsoft')
+        self.assertEqual(row.Email, 'billgates@microsoft.com')
+        self.assertEqual(row.Phone, 787877878)
+        self.assertEqual(row.Charge, 'Adviser')
+        row = next(reader)
+        self.assertEqual(row.Name, 'Jeff')
+        self.assertEqual(row.Surname, 'Bezos')
+        self.assertEqual(row.Company, 'Amazon')
+        self.assertEqual(row.Email, 'jeffbezos@amazon.com')
+        self.assertEqual(row.Phone, 799998789)
+        self.assertEqual(row.Charge, 'CEO')
+        row = next(reader)
+        self.assertEqual(row.Name, 'Elon')
+        self.assertEqual(row.Surname, 'Musk')
+        self.assertEqual(row.Company, 'Tesla')
+        self.assertEqual(row.Email, 'elonmask@tesla.com')
+        self.assertEqual(row.Phone, 740023028)
+        self.assertEqual(row.Charge, 'Engineering')
+        with self.assertRaises(StopIteration):
+            next(reader)
 
 
 if __name__ == '__main__':
