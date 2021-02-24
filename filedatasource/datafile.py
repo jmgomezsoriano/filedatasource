@@ -151,7 +151,9 @@ class DataReader(DataFile, ABC):
         """ Constructor.
 
         :param file_or_io: The file or the IO stream to read.
-        :param mode: The default mode to read the rows.
+        :param mode: The default mode to read the rows. When the reader is iterated,
+        it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
+        ReadMode.DICTIONARY or ReadMode.LIST, respectively.
         """
         super().__init__(file_or_io)
         if mode not in [elem for elem in ReadMode]:

@@ -97,7 +97,9 @@ class ExcelReader(ExcelData, DataReader):
         """ Constructor.
         :param fname: The file path to the Excel file.
         :param sheet: The sheet to read/write.
-        :param mode: The default mode to read the rows.
+        :param mode: The default mode to read the rows. When the reader is iterated,
+        it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
+        ReadMode.DICTIONARY or ReadMode.LIST, respectively.
         """
         super(ExcelReader, self).__init__(fname, sheet=sheet)
         DataReader.__init__(self, fname, mode=mode)

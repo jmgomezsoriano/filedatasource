@@ -1,24 +1,28 @@
 from typing import Union, List, TextIO, BinaryIO, Any, Dict
 
-from filedatasource import CsvReader, ExcelReader, CsvWriter, ExcelWriter, Mode, ReadMode
+from filedatasource import CsvReader, ExcelReader, CsvWriter, ExcelWriter, Mode, ReadMode, DataWriter, DataReader
+from filedatasource.utils import attributes2list, dict_keys2list
 
 
-def open_reader(fname: str) -> Union[CsvReader, ExcelReader]:
+def open_reader(fname: str, mode: ReadMode = ReadMode.OBJECT) -> DataReader:
     """ Create a CsvReader or a ExcelReader with the parameters by default only from the file path and the extension
     of the file name. If it ends with .csv.gz or .gz, then a CSV file is created, however, if the extension
     is .xls or .xlsx, then an Excel file is read.
 
     :param fname: The path to the Excel or CSV file.
+    :param mode: The default mode to read the rows. When the reader is iterated,
+        it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
+        ReadMode.DICTIONARY or ReadMode.LIST, respectively.
     :return: A CsvReader or a ExcelReader depending on the file extension.
     """
     if fname.endswith('.csv') or fname.endswith('.csv.gz'):
-        return CsvReader(fname)
+        return CsvReader(fname, mode=mode)
     if fname.endswith('.xls') or fname.endswith('.xlsx'):
-        return ExcelReader(fname)
+        return ExcelReader(fname, mode=mode)
     raise ValueError(f'The file name {fname} has to finish in .csv, .csv.gz, .xls, or .xlsx to use this function')
 
 
-def open_writer(fname: str, fieldnames: List[str]) -> Union[CsvWriter, ExcelWriter]:
+def open_writer(fname: str, fieldnames: List[str]) -> DataWriter:
     """ Create a CsvWriter or a ExcelWriter with the parameters by default only from the file path with a given
      extension, and the fieldnames. If the file extension ends with .csv.gz or .gz, then a CSV file is created,
      however, if the extension is .xls or .xlsx, then an Excel file is created.
@@ -191,3 +195,99 @@ def excel2objects(fname: str, sheet: Union[str, int] = 0) -> List[object]:
     """
     with ExcelReader(fname, sheet, ReadMode.OBJECT) as reader:
         return reader.read_objects()
+
+
+def load(fname: str, mode: ReadMode = ReadMode.OBJECT) -> Union[List[object], List[Dict], List[List]]:
+    """
+    Load an Excel or CSV file and return a list of objects with the file content.
+    :param fname: The file path to the file.
+    :param mode: The default mode to read the rows. When the reader is iterated,
+        it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
+        ReadMode.DICTIONARY or ReadMode.LIST, respectively.
+    :return: A list of objects. Each object is a file row with the attributes as column names and the attribute values
+    as column values.
+    """
+    if mode == ReadMode.OBJECT:
+        return load_objs(fname)
+    elif mode == ReadMode.DICT:
+        return load_dicts(fname)
+    elif mode == ReadMode.LIST:
+        return load_lists(fname)
+
+
+def load_objs(fname: str) -> List[object]:
+    """
+    Load an Excel or CSV file and return a list of objects with the file content.
+    :param fname: The file path to the file.
+    :return: A list of objects. Each object is a file row with the attributes as column names and the attribute values
+    as column values.
+    """
+    with open_reader(fname) as reader:
+        return [obj for obj in reader]
+
+
+def load_dicts(fname) -> List[Dict]:
+    """
+    Load an Excel or CSV file and return a list of dictionaries with the file content.
+    :param fname: The file path to the file.
+    :return: A list of dictionaries. Each dictionary is a file row with the keys as column names
+    and with the dictionary values as column values.
+    """
+    with open_reader(fname, mode=ReadMode.DICT) as reader:
+        return [d for d in reader]
+
+
+def load_lists(fname) -> List[List]:
+    """
+    Load an Excel or CSV file and return a list of lists with the file content.
+    :param fname: The file path to the file.
+    :return: A list of lists. Each list is a file row with the column values.
+    """
+    with open_reader(fname, mode=ReadMode.LIST) as reader:
+        return [lst for lst in reader]
+
+
+def save(fname: str, objs: List[object]) -> None:
+    """
+    Save a list of objects as a rows of an Excel or CSV file.
+    :param fname: the file path to the file.
+    :param objs: The list of objects to write. All objects must have the same attribute or property names.
+    """
+    save_objs(fname, objs)
+
+
+def save_objs(fname: str, objs: List[object]) -> None:
+    """
+    Save a list of objects as a rows of an Excel or CSV file.
+    :param fname: the file path to the file.
+    :param objs: The list of objects to write. All objects must have the same attribute or property names.
+    """
+    if not objs:
+        raise ValueError('The list of objects has to contain at least one object to use this method.')
+    with open_writer(fname, fieldnames=attributes2list(objs[0])) as writer:
+        writer.write_objects(objs)
+
+
+def save_dicts(fname: str, dicts: List[Dict]) -> None:
+    """
+    Save a list of dictionaries as a rows of an Excel or CSV file.
+    :param fname: the file path to the file.
+    :param dicts: The list of dictionaries to write. All the dictionaries must have the same key names.
+    """
+    if not dicts:
+        raise ValueError('The list of dictionaries has to contain at least one dictionary to use this method.')
+    with open_writer(fname, fieldnames=dict_keys2list(dicts[0])) as writer:
+        writer.write_dicts(dicts)
+
+
+def save_lists(fname: str, lists: List[List], fieldnames: List[str]) -> None:
+    """
+    Save a list of lists as a rows of an Excel or CSV file.
+    :param fname: the file path to the file.
+    :param fieldnames: the list of column names.
+    :param lists: The list of lists to write.
+    """
+    if not lists:
+        raise ValueError('The list of list has to contain at least one list to use this method.')
+    with open_writer(fname, fieldnames=fieldnames) as writer:
+        writer.write_lists(lists)

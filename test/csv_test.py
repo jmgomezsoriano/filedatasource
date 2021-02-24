@@ -5,7 +5,8 @@ from typing import List
 from tqdm import tqdm
 
 from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode, DataWriter, DataReader, \
-    open_reader, open_writer, excel2list, excel2dict, csv2dict, csv2objects, objects2csv, dict2csv, list2csv, csv2list
+    open_reader, open_writer, excel2list, excel2dict, csv2dict, csv2objects, objects2csv, dict2csv, list2csv, csv2list, \
+    save, load
 
 DATA_FILE = 'data.csv'
 COMPRESSED_FILE = 'data.csv.gz'
@@ -289,7 +290,40 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(obj.b, '20')
             obj = next(reader)
             self.assertEqual(obj.a, '22')
+        with open_reader(COMPRESSED_FILE, mode=ReadMode.DICT) as reader:
+            d = next(reader)
+            self.assertEqual(d['c'], '18')
+            d = next(reader)
+            self.assertEqual(d['b'], '20')
+            d = next(reader)
+            self.assertEqual(d['a'], '22')
+        with open_reader(COMPRESSED_FILE, mode=ReadMode.LIST) as reader:
+            lst = next(reader)
+            self.assertEqual(lst[2], '18')
+            lst = next(reader)
+            self.assertEqual(lst[1], '20')
+            lst = next(reader)
+            self.assertEqual(lst[0], '22')
         os.remove(COMPRESSED_FILE)
+
+    def test_more_builders(self):
+        save(EXCEL_FILE, objects)
+        with open_reader(EXCEL_FILE) as reader:
+            obj = next(reader)
+            self.assertEqual(obj.c, 18)
+            obj = next(reader)
+            self.assertEqual(obj.b, 20)
+            obj = next(reader)
+            self.assertEqual(obj.a, 22)
+        objs = load(EXCEL_FILE)
+        self.assertEqual(objs[0].c, 18)
+        self.assertEqual(objs[1].b, 20)
+        self.assertEqual(objs[2].a, 22)
+        dicts = load(EXCEL_FILE, mode=ReadMode.DICT)
+        self.assertEqual(dicts[0]['c'], 18)
+        self.assertEqual(dicts[1]['b'], 20)
+        self.assertEqual(dicts[2]['a'], 22)
+        os.remove(EXCEL_FILE)
 
     def test_sheets(self) -> None:
         with ExcelReader('Example.xls', sheet=0) as reader:

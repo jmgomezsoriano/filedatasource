@@ -123,7 +123,7 @@ class CsvReader(CsvData, DataReader):
         """
         :return: The sequence of field names to use as CSV head.
         """
-        return self._reader.fieldnames
+        return list(self._reader.fieldnames)
 
     def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], mode: ReadMode = ReadMode.OBJECT,
                  encoding: str = 'utf-8'):
@@ -132,6 +132,9 @@ class CsvReader(CsvData, DataReader):
         :param file_or_io: The file path or an opened stream to use. If it is a file path and it ends in .gz, then
         the compressed file is read using gzip.
         :param encoding: The encoding (it is only used if the parameter file_or_stram is a file path).
+        :param mode: The default mode to read the rows. When the reader is iterated,
+        it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
+        ReadMode.DICTIONARY or ReadMode.LIST, respectively.
         """
         if mode not in [ReadMode.OBJECT, ReadMode.DICT, ReadMode.LIST]:
             raise ValueError(f'The read mode only can be ReadMode.OBJECT, ReadMode.DICT or ReadMode.LIST, not {mode}.')
