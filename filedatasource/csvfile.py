@@ -195,6 +195,7 @@ class CsvReader(CsvData, DataReader):
         if self.file_name:
             with CsvReader(self.file_name, ReadMode.DICT, self.encoding) as reader:
                 self.__length = sum(1 for _ in reader)
-        return self.__length
+                return self.__length
+        # return self.__length
         raise DataFileError(f'The length of the data source cannot be computed if it is defined as a file stream '
                             f'instead of a file path.')

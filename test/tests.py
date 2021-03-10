@@ -415,6 +415,11 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(len(writer), 5)
             writer.write_objects(objects)
             self.assertEqual(len(writer), 8)
+        with open('data.csv', 'rt') as file:
+            with self.assertRaisesRegex(DataFileError, 'The length of the data source cannot be computed if it is '
+                                                       'defined as a file stream instead of a file path.'):
+                len(CsvReader(file))
+
         with open('data.csv', 'at') as file:
             with self.assertRaisesRegex(ValueError, r'The reader is in mode Mode.WRITE but the file stream is in not '
                                                     r'in write mode \("at"\).'):
@@ -424,11 +429,10 @@ class MyTestCase(unittest.TestCase):
                                                     r'in append mode \("wt"\).'):
                 CsvWriter(file, ['a', 'b', 'c'], Mode.APPEND)
         with open_file('data.csv', Mode.APPEND) as file:
-            writer = CsvWriter(file, ['a', 'b', 'c'], Mode.APPEND)
             with self.assertRaisesRegex(DataFileError,
                                         'The length of the data source cannot be computed if it is defined as a file '
                                         'stream, instead of a file path and this writer is opened in APPEND mode.'):
-                len(writer)
+                len(CsvWriter(file, ['a', 'b', 'c'], Mode.APPEND))
 
 
 if __name__ == '__main__':
