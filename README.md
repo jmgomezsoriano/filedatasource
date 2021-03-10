@@ -502,3 +502,25 @@ with open_reader('data.csv.gz', mode=ReadMode.LIST) as reader:
    for lst in reader:
         print(lst[0], lst[1], lst[2])
 ```
+
+## Size calculation
+
+It is possible to know how many rows has a data source for both, writer or reader. For example:
+
+```python
+from filedatasource import open_reader, open_writer
+
+# How to know the number of rows in a reader with data
+with open_reader('data.csv') as reader:
+    print(len(reader))
+
+# How to know the number of rows in a writer
+with open_writer('data.csv', fieldnames=['a', 'b', 'c']) as writer:
+    print(len(writer))  # Print 0 because the file is opened for write.
+    writer.write(a=1, b=2, c=3)
+    writer.write(a=4, b=5, c=6)
+    print(len(writer))  # Print 2 because has been added two rows.
+```
+
+**Note**: The file length calculation does not work with readers oppened with a file stream instead of a file path or 
+with a writer opened with append mode and from a file stream.
