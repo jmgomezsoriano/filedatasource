@@ -5,6 +5,10 @@ from typing import List, Union, TextIO, BinaryIO, Any, Dict, Sequence, Callable
 from filedatasource.utils import dict2obj, attributes2list, attributes2dict, dict2list, dict_keys2list
 
 
+class DataFileError(Exception):
+    pass
+
+
 @unique
 class ReadMode(Enum):
     """ Modes which DataReader will return the rows. """
@@ -35,6 +39,7 @@ class DataFile(ABC):
         :param file_or_io: The file path to the Data file.
         """
         self._fname = file_or_io if isinstance(file_or_io, str) else None
+        self._file_stream = file_or_io if not isinstance(file_or_io, str) else None
 
     def __enter__(self):
         return self

@@ -4,7 +4,7 @@ from csv import DictWriter, DictReader
 from enum import Enum
 from typing import Union, TextIO, BinaryIO, List
 
-from filedatasource.datafile import DataFile, DataReader, DataWriter, ReadMode
+from filedatasource.datafile import DataFile, DataReader, DataWriter, ReadMode, DataFileError
 
 
 class Mode(Enum):
@@ -81,14 +81,26 @@ class CsvWriter(CsvData, DataWriter):
         :param mode: The writing mode: Mode.APPEND or Mode.WRITE. By default Mode.WRITE.
         :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
         """
-        if mode not in [Mode.WRITE, Mode.APPEND]:
-            raise ValueError(f'The {type(self).__name__} only allows modes {Mode.WRITE} or {Mode.APPEND}, not {mode}')
         super().__init__(file_or_io, mode, encoding)
+        self.__check_params(mode)
+
         self._fieldnames = self._parse_fieldnames(fieldnames)
 
         self._writer = DictWriter(self._file, fieldnames=self.fieldnames)
         if mode == Mode.WRITE:
             self._writer.writeheader()
+            self.__num_row = 0
+        else:
+            self.__num_row = None
+
+    def __check_params(self, mode):
+        if mode not in [Mode.WRITE, Mode.APPEND]:
+            raise ValueError(f'The {type(self).__name__} only allows modes {Mode.WRITE} or {Mode.APPEND}, not {mode}')
+        f_mode = self._file_stream.mode.strip() if self._file_stream and hasattr(self._file_stream, 'mode') else None
+        if f_mode and mode == Mode.WRITE and f_mode[0] != 'w':
+            raise ValueError(f'The reader is in mode {mode} but the file stream is in not in write mode ("{f_mode}").')
+        if f_mode and mode == Mode.APPEND and f_mode[0] != 'a':
+            raise ValueError(f'The reader is in mode {mode} but the file stream is in not in append mode ("{f_mode}").')
 
     def write_row(self, **row) -> None:
         """ Write a row.
@@ -96,6 +108,25 @@ class CsvWriter(CsvData, DataWriter):
         :param row: The dictionary or parameters to write.
         """
         self._writer.writerow(row)
+        if self.__num_row is not None:
+            self.__num_row += 1
+
+    def __len__(self) -> int:
+        """
+        Calculate the number of rows in the file.
+        :return: The number of rows in the data source.
+        :raises DataFileError: If with this data source is not possible to calculate the number of rows.
+          It is not possible to calculate if this comes from a file stream and it is opened as APPEND mode.
+        """
+        if self.__num_row is None:
+            if self.file_name:
+                with CsvReader(self.file_name, encoding=self.encoding) as reader:
+                    self.__num_row = len(reader)
+            else:
+                raise DataFileError(
+                    f'The length of the data source cannot be computed if it is defined as a file stream, '
+                    f'instead of a file path and this writer is opened in APPEND mode.')
+        return self.__num_row
 
 
 class CsvReader(CsvData, DataReader):
@@ -156,6 +187,8 @@ class CsvReader(CsvData, DataReader):
         it could do the algorithm a little bit slower.
 
         :return: The number of rows.
+        :raises DataFileError: If with this data source is not possible to calculate the number of rows.
+          It is not possible to calculate if this comes from a file stream.
         """
         if self.__length:
             return self.__length
@@ -163,3 +196,5 @@ class CsvReader(CsvData, DataReader):
             with CsvReader(self.file_name, ReadMode.DICT, self.encoding) as reader:
                 self.__length = sum(1 for _ in reader)
         return self.__length
+        raise DataFileError(f'The length of the data source cannot be computed if it is defined as a file stream '
+                            f'instead of a file path.')

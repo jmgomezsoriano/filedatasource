@@ -7,6 +7,8 @@ from tqdm import tqdm
 from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode, DataWriter, DataReader, \
     open_reader, open_writer, excel2list, excel2dict, csv2dict, csv2objects, objects2csv, dict2csv, list2csv, csv2list, \
     save, load
+from filedatasource.csvfile import open_file
+from filedatasource.datafile import DataFileError
 
 DATA_FILE = 'data.csv'
 COMPRESSED_FILE = 'data.csv.gz'
@@ -76,7 +78,9 @@ def list_to_int(lists: List[List[str]]) -> List[List[int]]:
 class MyTestCase(unittest.TestCase):
     def test_write_csv_dict(self):
         with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.assertEqual(len(writer), 0)
             write_registers(writer)
+            self.assertEqual(len(writer), 4)
         self.assertTrue(os.path.exists(DATA_FILE))
         with CsvReader(DATA_FILE) as reader:
             for obj in tqdm(reader):
@@ -101,7 +105,9 @@ class MyTestCase(unittest.TestCase):
 
     def test_write_excel(self):
         with ExcelWriter(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.assertEqual(len(writer), 0)
             write_registers(writer)
+            self.assertEqual(len(writer), 4)
         self.assertTrue(os.path.exists(EXCEL_FILE))
         with ExcelReader(EXCEL_FILE) as reader:
             for obj in tqdm(reader):
@@ -111,7 +117,9 @@ class MyTestCase(unittest.TestCase):
 
     def test_import(self):
         with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.assertEqual(len(writer), 0)
             write_registers(writer)
+            self.assertEqual(len(writer), 4)
         self.assertTrue(os.path.exists(DATA_FILE))
         with CsvReader(DATA_FILE) as reader:
             with ExcelWriter(EXCEL_FILE, fieldnames=reader.fieldnames) as writer:
@@ -120,7 +128,9 @@ class MyTestCase(unittest.TestCase):
         os.remove(DATA_FILE)
         os.remove(EXCEL_FILE)
         with ExcelWriter(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.assertEqual(len(writer), 0)
             write_registers(writer)
+            self.assertEqual(len(writer), 4)
         self.assertTrue(os.path.exists(EXCEL_FILE))
         with ExcelReader(EXCEL_FILE) as reader:
             with CsvWriter(DATA_FILE, fieldnames=reader.fieldnames) as writer:
@@ -234,11 +244,16 @@ class MyTestCase(unittest.TestCase):
 
     def test_append(self):
         with TestWriter(COMPRESSED_FILE) as writer:
+            self.assertEqual(len(writer), 0)
             writer.write_lists(lists)
+            self.assertEqual(len(writer), 3)
         with TestWriter(COMPRESSED_FILE, mode=Mode.APPEND) as writer:
+            self.assertEqual(len(writer), 3)
             writer.write_dicts(dicts)
+            self.assertEqual(len(writer), 5)
         with CsvReader(COMPRESSED_FILE, mode=ReadMode.OBJECT) as reader:
             self.assertListEqual(reader.read_list(), ['1', '2', '3'])
+            self.assertEqual(len(reader), 5)
             for obj in reader:
                 pass
         self.assertEqual(obj.b, '14')
@@ -264,7 +279,9 @@ class MyTestCase(unittest.TestCase):
         self.check_lists_excel(excel2list(EXCEL_FILE))
         os.remove(EXCEL_FILE)
         with open_writer(XLS_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            self.assertEqual(len(writer), 0)
             self.__write_lists_writer(writer)
+            self.assertEqual(len(writer), 8)
         with ExcelReader(XLS_FILE) as reader:
             self.check_dicts_reader(reader)
         self.check_dicts_excel(excel2dict(XLS_FILE))
@@ -328,20 +345,28 @@ class MyTestCase(unittest.TestCase):
     def test_sheets(self) -> None:
         with ExcelReader('Example.xls', sheet=0) as reader:
             self.check_clients_sheet(reader)
+            self.assertEqual(len(reader), 2)
         with ExcelReader('Example.xls', sheet=1) as reader:
             self.check_suppliers_sheet(reader)
+            self.assertEqual(len(reader), 3)
         with ExcelReader('Example.xls', sheet='Clients') as reader:
             self.check_clients_sheet(reader)
+            self.assertEqual(len(reader), 2)
         with ExcelReader('Example.xls', sheet='Suppliers') as reader:
             self.check_suppliers_sheet(reader)
+            self.assertEqual(len(reader), 3)
         with ExcelReader('Example.xlsx', sheet=0) as reader:
             self.check_clients_sheet(reader)
+            self.assertEqual(len(reader), 2)
         with ExcelReader('Example.xlsx', sheet=1) as reader:
             self.check_suppliers_sheet(reader)
+            self.assertEqual(len(reader), 3)
         with ExcelReader('Example.xlsx', sheet='Clients') as reader:
             self.check_clients_sheet(reader)
+            self.assertEqual(len(reader), 2)
         with ExcelReader('Example.xlsx', sheet='Suppliers') as reader:
             self.check_suppliers_sheet(reader)
+            self.assertEqual(len(reader), 3)
 
     def check_clients_sheet(self, reader: DataReader) -> None:
         row = next(reader)
@@ -379,6 +404,31 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(row.Charge, 'Engineering')
         with self.assertRaises(StopIteration):
             next(reader)
+
+    def test_strems(self):
+        with open('data.csv', 'wt') as file:
+            writer = CsvWriter(file, ['a', 'b', 'c'])
+            self.assertEqual(len(writer), 0)
+            writer.write_lists(lists)
+            self.assertEqual(len(writer), 3)
+            writer.write_dicts(dicts)
+            self.assertEqual(len(writer), 5)
+            writer.write_objects(objects)
+            self.assertEqual(len(writer), 8)
+        with open('data.csv', 'at') as file:
+            with self.assertRaisesRegex(ValueError, r'The reader is in mode Mode.WRITE but the file stream is in not '
+                                                    r'in write mode \("at"\).'):
+                CsvWriter(file, ['a', 'b', 'c'])
+        with open_file('data.csv', Mode.WRITE) as file:
+            with self.assertRaisesRegex(ValueError, r'The reader is in mode Mode.APPEND but the file stream is in not '
+                                                    r'in append mode \("wt"\).'):
+                CsvWriter(file, ['a', 'b', 'c'], Mode.APPEND)
+        with open_file('data.csv', Mode.APPEND) as file:
+            writer = CsvWriter(file, ['a', 'b', 'c'], Mode.APPEND)
+            with self.assertRaisesRegex(DataFileError,
+                                        'The length of the data source cannot be computed if it is defined as a file '
+                                        'stream, instead of a file path and this writer is opened in APPEND mode.'):
+                len(writer)
 
 
 if __name__ == '__main__':
