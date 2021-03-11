@@ -324,6 +324,16 @@ with CsvReader('data.csv') as reader:
         writer.import_reader(reader)
 ```
 
+What's more, it can be even easier: 
+
+```python
+from filedatasource import convert
+
+convert('data.csv', 'data.xlsx')
+```
+
+## Writers with predefined fieldnames
+
 If you are using the same writer several times, you can use a subclass in order to avoid define the __fieldnames__ 
 several times overwriting the fieldnames property. For example:
 

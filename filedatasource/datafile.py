@@ -96,7 +96,7 @@ class DataWriter(DataFile, ABC):
     def write_dict(self, row: dict) -> None:
         """ Write a dictionary as a row.
 
-        :param row: A dictionary with the fieldnames as a key and the row data as the dictioanry values.
+        :param row: A dictionary with the fieldnames as a key and the row data as the dictionary values.
         """
         self.write_row(**row)
 
@@ -149,7 +149,7 @@ class DataWriter(DataFile, ABC):
 
 
 class DataReader(DataFile, ABC):
-    """ A data reader to read very easy a file with data, usually, the typicla CSV or Excel files. """
+    """ A data reader to read very easy a file with data, usually, the typical CSV or Excel files. """
     __metaclass__ = ABCMeta
 
     def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], mode: ReadMode = ReadMode.OBJECT) -> None:

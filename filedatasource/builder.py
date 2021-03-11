@@ -14,6 +14,7 @@ def open_reader(fname: str, mode: ReadMode = ReadMode.OBJECT) -> DataReader:
         it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
         ReadMode.DICTIONARY or ReadMode.LIST, respectively.
     :return: A CsvReader or a ExcelReader depending on the file extension.
+    :raises ValueError: If the file name is not a CSV (compressed or not) or Excel (XLSX, XLS) file.
     """
     if fname.endswith('.csv') or fname.endswith('.csv.gz'):
         return CsvReader(fname, mode=mode)
@@ -30,6 +31,7 @@ def open_writer(fname: str, fieldnames: List[str]) -> DataWriter:
     :param fname: The path to the Excel or CSV file.
     :param fieldnames: The name of the fields.
     :return: A CsvWriter or a ExcelWriter depending on the file extension.
+    :raises ValueError: If the file name is not a CSV (compressed or not) or Excel (XLSX, XLS) file.
     """
     if fname.endswith('.csv') or fname.endswith('.csv.gz'):
         return CsvWriter(fname, fieldnames=fieldnames)
@@ -252,6 +254,7 @@ def save(fname: str, objs: List[object]) -> None:
     Save a list of objects as a rows of an Excel or CSV file.
     :param fname: the file path to the file.
     :param objs: The list of objects to write. All objects must have the same attribute or property names.
+    :raises ValueError: If the list of objects is empty.
     """
     save_objs(fname, objs)
 
@@ -261,6 +264,7 @@ def save_objs(fname: str, objs: List[object]) -> None:
     Save a list of objects as a rows of an Excel or CSV file.
     :param fname: the file path to the file.
     :param objs: The list of objects to write. All objects must have the same attribute or property names.
+    :raises ValueError: If the list of objects is empty.
     """
     if not objs:
         raise ValueError('The list of objects has to contain at least one object to use this method.')
@@ -273,6 +277,7 @@ def save_dicts(fname: str, dicts: List[Dict]) -> None:
     Save a list of dictionaries as a rows of an Excel or CSV file.
     :param fname: the file path to the file.
     :param dicts: The list of dictionaries to write. All the dictionaries must have the same key names.
+    :raises ValueError: If the list of dicts is empty.
     """
     if not dicts:
         raise ValueError('The list of dictionaries has to contain at least one dictionary to use this method.')
@@ -286,8 +291,23 @@ def save_lists(fname: str, lists: List[List], fieldnames: List[str]) -> None:
     :param fname: the file path to the file.
     :param fieldnames: the list of column names.
     :param lists: The list of lists to write.
+    :raises ValueError: If the list is empty.
     """
     if not lists:
         raise ValueError('The list of list has to contain at least one list to use this method.')
     with open_writer(fname, fieldnames=fieldnames) as writer:
         writer.write_lists(lists)
+
+
+def convert(fr_file: str, to_file) -> None:
+    """
+    Convert a file into another.
+    :param fr_file: The file to copy.
+    :param to_file: The target file.
+    :raises ValueError: If both files are the same.
+    """
+    if fr_file == to_file:
+        raise ValueError('Both file paths cannot be the same file.')
+    with open_reader(fr_file, ReadMode.DICT) as reader:
+        with open_writer(to_file, reader.fieldnames) as writer:
+            writer.import_reader(reader)

@@ -9,6 +9,7 @@ def open_xls(fname: str):
 
     :param fname: The path to the xls file.
     :return: The workbook which is a instance of xlrd.book.Book class.
+    :raises ModuleNotFoundError: If the module xlrd is not installed.
     """
     try:
         xlrd = __import__('xlrd')
@@ -22,6 +23,7 @@ def open_xlsx(fname: str):
 
     :param fname: The path to the xlsx file.
     :return: The workbook which is a instance of Workbook class.
+    :raises ModuleNotFoundError: If the module openpyxl is not installed.
     """
     try:
         openpyxl = __import__('openpyxl')
@@ -35,6 +37,7 @@ def create_xlsx(fname: str):
 
     :param fname: The path to save the xlsx file.
     :return: The workbook which is a instance of Workbook class.
+    :raises ModuleNotFoundError: If the module xlsxwriter is not installed.
     """
     try:
         xlsxwriter = __import__('xlsxwriter')
@@ -47,6 +50,7 @@ def create_xls():
     """  Create an Excel file in the old xls format importing the module.
 
     :return: The workbook which is a instance of xlrd.book.Book class.
+    :raises ModuleNotFoundError: If the module xlwt is not installed.
     """
     try:
         xlwt = __import__('xlwt')
@@ -100,6 +104,7 @@ class ExcelReader(ExcelData, DataReader):
         :param mode: The default mode to read the rows. When the reader is iterated,
         it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
         ReadMode.DICTIONARY or ReadMode.LIST, respectively.
+        :raises ValueError: If the file name is not a CSV (compressed or not) or Excel (XLSX, XLS) file.
         """
         super(ExcelReader, self).__init__(fname, sheet=sheet)
         DataReader.__init__(self, fname, mode=mode)

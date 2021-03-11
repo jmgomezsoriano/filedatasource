@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode, DataWriter, DataReader, \
     open_reader, open_writer, excel2list, excel2dict, csv2dict, csv2objects, objects2csv, dict2csv, list2csv, csv2list, \
-    save, load
+    save, load, convert
 from filedatasource.csvfile import open_file
 from filedatasource.datafile import DataFileError
 
@@ -434,6 +434,16 @@ class MyTestCase(unittest.TestCase):
                                         'stream, instead of a file path and this writer is opened in APPEND mode.'):
                 len(CsvWriter(file, ['a', 'b', 'c'], Mode.APPEND))
         os.remove(DATA_FILE)
+
+    def test_convert(self):
+        write_registers(open_writer(COMPRESSED_FILE, fieldnames=['a', 'b', 'c']))
+        convert(COMPRESSED_FILE, XLS_FILE)
+        with open_reader(COMPRESSED_FILE, ReadMode.DICT) as reader1:
+            with open_reader(XLS_FILE, ReadMode.DICT) as reader2:
+                for dict1 in reader1:
+                    dict2 = next(reader2)
+                    self.assertDictEqual(dict1, dict2)
+                self.assertEqual(len(reader1), len(reader2))
 
 
 if __name__ == '__main__':

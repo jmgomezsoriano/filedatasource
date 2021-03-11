@@ -80,6 +80,8 @@ class CsvWriter(CsvData, DataWriter):
         :param fieldnames: The field names of this CSV.
         :param mode: The writing mode: Mode.APPEND or Mode.WRITE. By default Mode.WRITE.
         :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
+        :raises ValueError: If mode is not Mode.WRITE or Mode.APPEND or if file_or_io is a file stream with
+          write or append modes but this modes does not correspond to the mode parameter.
         """
         super().__init__(file_or_io, mode, encoding)
         self.__check_params(mode)
@@ -162,10 +164,11 @@ class CsvReader(CsvData, DataReader):
 
         :param file_or_io: The file path or an opened stream to use. If it is a file path and it ends in .gz, then
         the compressed file is read using gzip.
-        :param encoding: The encoding (it is only used if the parameter file_or_stram is a file path).
+        :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
         :param mode: The default mode to read the rows. When the reader is iterated,
-        it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
-        ReadMode.DICTIONARY or ReadMode.LIST, respectively.
+          it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
+          ReadMode.DICTIONARY or ReadMode.LIST, respectively.
+        :raises ValueError: If the read mode is not ReadMode.OBJECT, ReadMode.DICT or ReadMode.LIST.
         """
         if mode not in [ReadMode.OBJECT, ReadMode.DICT, ReadMode.LIST]:
             raise ValueError(f'The read mode only can be ReadMode.OBJECT, ReadMode.DICT or ReadMode.LIST, not {mode}.')
