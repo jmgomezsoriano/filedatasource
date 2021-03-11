@@ -1,8 +1,12 @@
 from abc import ABC, ABCMeta, abstractmethod
 from enum import Enum, unique, auto
-from typing import List, Union, TextIO, BinaryIO, Any, Dict, Sequence, Iterable, Callable
+from typing import List, Union, TextIO, BinaryIO, Any, Dict, Sequence, Callable
 
 from filedatasource.utils import dict2obj, attributes2list, attributes2dict, dict2list, dict_keys2list
+
+
+class DataFileError(Exception):
+    pass
 
 
 @unique
@@ -35,6 +39,7 @@ class DataFile(ABC):
         :param file_or_io: The file path to the Data file.
         """
         self._fname = file_or_io if isinstance(file_or_io, str) else None
+        self._file_stream = file_or_io if not isinstance(file_or_io, str) else None
 
     def __enter__(self):
         return self
@@ -51,7 +56,8 @@ class DataFile(ABC):
 class DataWriter(DataFile, ABC):
     __metaclass__ = ABCMeta
 
-    def _parse_fieldnames(self, fieldnames: Union[List[str], Dict, object]) -> List[str]:
+    @staticmethod
+    def _parse_fieldnames(fieldnames: Union[List[str], Dict, object]) -> List[str]:
         """ Convert the fieldnames if their are defined as a dict or an object with attributes or properties in
         a list of fieldnames without values.
         If this argument is already a list, then return it without any modification.
@@ -90,7 +96,7 @@ class DataWriter(DataFile, ABC):
     def write_dict(self, row: dict) -> None:
         """ Write a dictionary as a row.
 
-        :param row: A dictionary with the fieldnames as a key and the row data as the dictioanry values.
+        :param row: A dictionary with the fieldnames as a key and the row data as the dictionary values.
         """
         self.write_row(**row)
 
@@ -103,12 +109,12 @@ class DataWriter(DataFile, ABC):
         for row in rows:
             self.write_dict(row)
 
-    def write_object(self, object: object) -> None:
+    def write_object(self, o: object) -> None:
         """ Write an objects.
 
-        :param object: The objects to write with public attributes or properties.
+        :param o: The objects to write with public attributes or properties.
         """
-        self.write_row(**attributes2dict(object))
+        self.write_row(**attributes2dict(o))
 
     def write_objects(self, objects: Sequence[object]) -> None:
         """ Write a sequence of objects.
@@ -126,7 +132,7 @@ class DataWriter(DataFile, ABC):
         self.write_dict({field: lst[i] for i, field in enumerate(self.fieldnames)})
 
     def write_lists(self, lists: Sequence[list]) -> None:
-        """  Write a sequences of lists as a sequence of rows
+        """ Write a sequences of lists as a sequence of rows
 
         :param lists: The sequence of rows as lists.
         """
@@ -143,14 +149,16 @@ class DataWriter(DataFile, ABC):
 
 
 class DataReader(DataFile, ABC):
-    """ A data reader to read very easy a file with data, usually, the typicla CSV or Excel files. """
+    """ A data reader to read very easy a file with data, usually, the typical CSV or Excel files. """
     __metaclass__ = ABCMeta
 
     def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], mode: ReadMode = ReadMode.OBJECT) -> None:
         """ Constructor.
 
         :param file_or_io: The file or the IO stream to read.
-        :param mode: The default mode to read the rows.
+        :param mode: The default mode to read the rows. When the reader is iterated,
+        it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
+        ReadMode.DICTIONARY or ReadMode.LIST, respectively.
         """
         super().__init__(file_or_io)
         if mode not in [elem for elem in ReadMode]:
@@ -221,7 +229,8 @@ class DataReader(DataFile, ABC):
         """
         return self.__read_lists(self.read_object)
 
-    def __read_lists(self, func: Callable) -> List[Any]:
+    @staticmethod
+    def __read_lists(func: Callable) -> List[Any]:
         """ Call the function until it returns a StopIteration exception. Then, this method returns a list with
         the results of the each function call.
 

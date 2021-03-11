@@ -4,7 +4,7 @@ from csv import DictWriter, DictReader
 from enum import Enum
 from typing import Union, TextIO, BinaryIO, List
 
-from filedatasource.datafile import DataFile, DataReader, DataWriter, ReadMode
+from filedatasource.datafile import DataFile, DataReader, DataWriter, ReadMode, DataFileError
 
 
 class Mode(Enum):
@@ -72,7 +72,7 @@ class CsvWriter(CsvData, DataWriter):
         return self._fieldnames
 
     def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], fieldnames: Union[List[str], type, object] = None,
-                 mode: Mode = Mode.WRITE, encoding: str = 'utf-8'):
+                 mode: Mode = Mode.WRITE, encoding: str = 'utf-8') -> None:
         """ Constructor of this CSV writer.
 
         :param file_or_io: The file path or an opened stream to use. If it is a file path and it ends in .gz, then
@@ -80,15 +80,29 @@ class CsvWriter(CsvData, DataWriter):
         :param fieldnames: The field names of this CSV.
         :param mode: The writing mode: Mode.APPEND or Mode.WRITE. By default Mode.WRITE.
         :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
+        :raises ValueError: If mode is not Mode.WRITE or Mode.APPEND or if file_or_io is a file stream with
+          write or append modes but this modes does not correspond to the mode parameter.
         """
-        if mode not in [Mode.WRITE, Mode.APPEND]:
-            raise ValueError(f'The {type(self).__name__} only allows modes {Mode.WRITE} or {Mode.APPEND}, not {mode}')
         super().__init__(file_or_io, mode, encoding)
+        self.__check_params(mode)
+
         self._fieldnames = self._parse_fieldnames(fieldnames)
 
         self._writer = DictWriter(self._file, fieldnames=self.fieldnames)
         if mode == Mode.WRITE:
             self._writer.writeheader()
+            self.__num_row = 0
+        else:
+            self.__num_row = None
+
+    def __check_params(self, mode):
+        if mode not in [Mode.WRITE, Mode.APPEND]:
+            raise ValueError(f'The {type(self).__name__} only allows modes {Mode.WRITE} or {Mode.APPEND}, not {mode}')
+        f_mode = self._file_stream.mode.strip() if self._file_stream and hasattr(self._file_stream, 'mode') else None
+        if f_mode and mode == Mode.WRITE and f_mode[0] != 'w':
+            raise ValueError(f'The reader is in mode {mode} but the file stream is in not in write mode ("{f_mode}").')
+        if f_mode and mode == Mode.APPEND and f_mode[0] != 'a':
+            raise ValueError(f'The reader is in mode {mode} but the file stream is in not in append mode ("{f_mode}").')
 
     def write_row(self, **row) -> None:
         """ Write a row.
@@ -96,6 +110,25 @@ class CsvWriter(CsvData, DataWriter):
         :param row: The dictionary or parameters to write.
         """
         self._writer.writerow(row)
+        if self.__num_row is not None:
+            self.__num_row += 1
+
+    def __len__(self) -> int:
+        """
+        Calculate the number of rows in the file.
+        :return: The number of rows in the data source.
+        :raises DataFileError: If with this data source is not possible to calculate the number of rows.
+          It is not possible to calculate if this comes from a file stream and it is opened as APPEND mode.
+        """
+        if self.__num_row is None:
+            if self.file_name:
+                with CsvReader(self.file_name, encoding=self.encoding) as reader:
+                    self.__num_row = len(reader)
+            else:
+                raise DataFileError(
+                    f'The length of the data source cannot be computed if it is defined as a file stream, '
+                    f'instead of a file path and this writer is opened in APPEND mode.')
+        return self.__num_row
 
 
 class CsvReader(CsvData, DataReader):
@@ -123,7 +156,7 @@ class CsvReader(CsvData, DataReader):
         """
         :return: The sequence of field names to use as CSV head.
         """
-        return self._reader.fieldnames
+        return list(self._reader.fieldnames)
 
     def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], mode: ReadMode = ReadMode.OBJECT,
                  encoding: str = 'utf-8'):
@@ -131,11 +164,18 @@ class CsvReader(CsvData, DataReader):
 
         :param file_or_io: The file path or an opened stream to use. If it is a file path and it ends in .gz, then
         the compressed file is read using gzip.
-        :param encoding: The encoding (it is only used if the parameter file_or_stram is a file path).
+        :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
+        :param mode: The default mode to read the rows. When the reader is iterated,
+          it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
+          ReadMode.DICTIONARY or ReadMode.LIST, respectively.
+        :raises ValueError: If the read mode is not ReadMode.OBJECT, ReadMode.DICT or ReadMode.LIST.
         """
+        if mode not in [ReadMode.OBJECT, ReadMode.DICT, ReadMode.LIST]:
+            raise ValueError(f'The read mode only can be ReadMode.OBJECT, ReadMode.DICT or ReadMode.LIST, not {mode}.')
         super(CsvReader, self).__init__(file_or_io, Mode.READ, encoding)
         DataReader.__init__(self, file_or_io, mode)
         self._reader = DictReader(self._file)
+        self.__length = None
 
     def read_row(self) -> dict:
         """ Read a row of the CSV file.
@@ -146,11 +186,19 @@ class CsvReader(CsvData, DataReader):
         return next(self._reader)
 
     def __len__(self) -> int:
-        """ Calculate the number of rows. This method
+        """ Calculate the number of rows. The first time you call this method it read the whole file once and
+        it could do the algorithm a little bit slower.
 
-        :return:
+        :return: The number of rows.
+        :raises DataFileError: If with this data source is not possible to calculate the number of rows.
+          It is not possible to calculate if this comes from a file stream.
         """
+        if self.__length:
+            return self.__length
         if self.file_name:
-            with CsvReader(self.file_name, encoding=self.encoding) as reader:
-                return sum(1 for _ in reader)
-        return 0
+            with CsvReader(self.file_name, ReadMode.DICT, self.encoding) as reader:
+                self.__length = sum(1 for _ in reader)
+                return self.__length
+        # return self.__length
+        raise DataFileError(f'The length of the data source cannot be computed if it is defined as a file stream '
+                            f'instead of a file path.')
