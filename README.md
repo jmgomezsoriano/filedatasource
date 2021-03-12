@@ -213,14 +213,23 @@ file, you can use the __mode__ parameter with the value __Mode.APPEND__ like thi
 from filedatasource import CsvWriter, Mode
 
 # Creating a CsvWriter in APPEND mode
-with CsvWriter('data.csv', mode=Mode.APPEND) as writer:
+with CsvWriter('data.csv', fieldnames=['a', 'b', 'c'], mode=Mode.APPEND) as writer:
+    writer.write_dicts([
+        {'a': 10, 'b': 11, 'c': 12},
+        {'a': 13, 'b': 14, 'c': 15}
+    ])
+
+from filedatasource import ExcelWriter, Mode
+
+# Creating a ExcelWriter in APPEND mode (important note below)
+with ExcelWriter('data.xlsx', fieldnames=['a', 'b', 'c'], mode=Mode.APPEND) as writer:
     writer.write_dicts([
         {'a': 10, 'b': 11, 'c': 12},
         {'a': 13, 'b': 14, 'c': 15}
     ])
 ```
 
-**Note**: The __mode__ parameter can only be used in CSV files and not in Excel files.
+**Important note**: If an Excel file has more than one sheet, the append mode will remove all the rest sheets.
 
 ## Working with Excel sheets
 
