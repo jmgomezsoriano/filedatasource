@@ -8,7 +8,7 @@ from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode,
     open_reader, open_writer, excel2list, excel2dict, csv2dict, csv2objects, objects2csv, dict2csv, list2csv, csv2list, \
     save, load, convert
 from filedatasource.csvfile import open_file
-from filedatasource.datafile import DataFileError
+from filedatasource.datafile import DataSourceError
 
 DATA_FILE = 'data.csv'
 COMPRESSED_FILE = 'data.csv.gz'
@@ -16,7 +16,7 @@ EXCEL_FILE = 'data.xlsx'
 XLS_FILE = 'data.xls'
 
 
-def write_registers(writer):
+def write_registers(writer) -> None:
     writer.write_row(a=1, b=2, c=3)
     writer.write_row(a=2, b=4, c=7)
     writer.write_row(a=3, b=6, c=15)
@@ -76,7 +76,7 @@ def list_to_int(lists: List[List[str]]) -> List[List[int]]:
 
 
 class MyTestCase(unittest.TestCase):
-    def test_write_csv_dict(self):
+    def test_write_csv_dict(self) -> None:
         with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
             self.assertEqual(len(writer), 0)
             write_registers(writer)
@@ -88,7 +88,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(obj.b, '8')
         os.remove(DATA_FILE)
 
-    def test_write_csv_obj(self):
+    def test_write_csv_obj(self) -> None:
         with CsvWriter(COMPRESSED_FILE, fieldnames=Employee) as writer:
             writer.write(Employee('John', 'Smith'))
             writer.write(Employee('Maria', 'Ortega'))
@@ -103,7 +103,7 @@ class MyTestCase(unittest.TestCase):
                 reader.read()
         os.remove(COMPRESSED_FILE)
 
-    def test_write_excel(self):
+    def test_write_excel(self) -> None:
         with ExcelWriter(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
             self.assertEqual(len(writer), 0)
             write_registers(writer)
@@ -115,7 +115,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(obj.b, 8)
         os.remove(EXCEL_FILE)
 
-    def test_import(self):
+    def test_import(self) -> None:
         with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
             self.assertEqual(len(writer), 0)
             write_registers(writer)
@@ -139,7 +139,7 @@ class MyTestCase(unittest.TestCase):
         os.remove(DATA_FILE)
         os.remove(EXCEL_FILE)
 
-    def test_dict_2_object(self):
+    def test_dict_2_object(self) -> None:
         d = {'1': 1, 'G&S': 2}
         with CsvWriter(DATA_FILE, fieldnames=d) as writer:
             writer.write_dict(d)
@@ -151,7 +151,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(obj.G_S, '2')
         os.remove(DATA_FILE)
 
-    def test_lists(self):
+    def test_lists(self) -> None:
         with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
             self.__write_lists_writer(writer)
         with CsvReader(DATA_FILE) as reader:
@@ -162,48 +162,48 @@ class MyTestCase(unittest.TestCase):
             self.check_objects_reader(reader)
         os.remove(DATA_FILE)
 
-    def check_lists_csv(self, lists):
+    def check_lists_csv(self, lists: List[List[int]]) -> None:
         self.assertEqual(len(lists), 8)
         self.assertListEqual(lists[0], ['1', '2', '3'])
         self.assertListEqual(lists[7], ['22', '23', '24'])
 
-    def check_lists_reader(self, reader: DataReader):
+    def check_lists_reader(self, reader: DataReader) -> None:
         lists = reader.read_lists()
         if isinstance(reader, CsvReader):
             self.check_lists_csv(lists)
         else:
             self.check_lists_excel(lists)
 
-    def check_lists_excel(self, lists):
+    def check_lists_excel(self, lists: List[List[int]]):
         self.assertEqual(len(lists), 8)
         self.assertListEqual(lists[0], [1, 2, 3])
         self.assertListEqual(lists[7], [22, 23, 24])
 
-    def check_dicts_reader(self, reader: DataReader):
+    def check_dicts_reader(self, reader: DataReader) -> None:
         dicts = reader.read_rows()
         if isinstance(reader, CsvReader):
             self.check_dicts_csv(dicts)
         else:
             self.check_dicts_excel(dicts)
 
-    def check_dicts_csv(self, dicts):
+    def check_dicts_csv(self, dicts: List[dict]) -> None:
         self.assertEqual(len(dicts), 8)
         self.assertDictEqual(dicts[0], {'a': '1', 'b': '2', 'c': '3'})
         self.assertDictEqual(dicts[7], {'a': '22', 'b': '23', 'c': '24'})
 
-    def check_dicts_excel(self, dicts):
+    def check_dicts_excel(self, dicts: List[dict]) -> None:
         self.assertEqual(len(dicts), 8)
         self.assertDictEqual(dicts[0], {'a': 1, 'b': 2, 'c': 3})
         self.assertDictEqual(dicts[7], {'a': 22, 'b': 23, 'c': 24})
 
-    def check_objects_reader(self, reader: DataReader):
+    def check_objects_reader(self, reader: DataReader) -> None:
         objs = reader.read_objects()
         if isinstance(reader, CsvReader):
             self.check_objects_csv(objs)
         else:
             self.check_objects_excel(objs)
 
-    def check_objects_csv(self, objs):
+    def check_objects_csv(self, objs) -> None:
         self.assertEqual(len(objs), 8)
         self.assertEqual(objs[0].a, '1')
         self.assertEqual(objs[0].b, '2')
@@ -211,7 +211,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(objs[7].b, '23')
         self.assertEqual(objs[7].c, '24')
 
-    def check_objects_excel(self, objs):
+    def check_objects_excel(self, objs) -> None:
         self.assertEqual(len(objs), 8)
         self.assertEqual(objs[0].a, 1)
         self.assertEqual(objs[0].b, 2)
@@ -219,12 +219,13 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(objs[7].b, 23)
         self.assertEqual(objs[7].c, 24)
 
-    def __write_lists_writer(self, writer: DataWriter):
+    @staticmethod
+    def __write_lists_writer(writer: DataWriter) -> None:
         writer.write_lists(lists)
         writer.write_dicts(dicts)
         writer.write_objects(objects)
 
-    def test_read_modes(self):
+    def test_read_modes(self) -> None:
         with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
             self.__write_lists_writer(writer)
         with CsvReader(DATA_FILE, mode=ReadMode.DICT) as reader:
@@ -242,7 +243,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(obj.c, '24')
         os.remove(DATA_FILE)
 
-    def test_append(self):
+    def test_append(self) -> None:
         with TestWriter(COMPRESSED_FILE) as writer:
             self.assertEqual(len(writer), 0)
             writer.write_lists(lists)
@@ -259,7 +260,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(obj.b, '14')
         self.assertEqual(obj.c, '15')
 
-    def test_xls_xlsx(self):
+    def test_xls_xlsx(self) -> None:
         with ExcelWriter(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
             self.__write_lists_writer(writer)
         with ExcelReader(EXCEL_FILE) as reader:
@@ -271,7 +272,7 @@ class MyTestCase(unittest.TestCase):
         os.remove(EXCEL_FILE)
         os.remove(XLS_FILE)
 
-    def test_builders(self):
+    def test_builders(self) -> None:
         with open_writer(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
             self.__write_lists_writer(writer)
         with ExcelReader(EXCEL_FILE) as reader:
@@ -323,7 +324,7 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(lst[0], '22')
         os.remove(COMPRESSED_FILE)
 
-    def test_more_builders(self):
+    def test_more_builders(self) -> None:
         save(EXCEL_FILE, objects)
         with open_reader(EXCEL_FILE) as reader:
             obj = next(reader)
@@ -405,7 +406,7 @@ class MyTestCase(unittest.TestCase):
         with self.assertRaises(StopIteration):
             next(reader)
 
-    def test_strems(self):
+    def test_strems(self) -> None:
         with open('data.csv', 'wt') as file:
             writer = CsvWriter(file, ['a', 'b', 'c'])
             self.assertEqual(len(writer), 0)
@@ -416,7 +417,7 @@ class MyTestCase(unittest.TestCase):
             writer.write_objects(objects)
             self.assertEqual(len(writer), 8)
         with open('data.csv', 'rt') as file:
-            with self.assertRaisesRegex(DataFileError, 'The length of the data source cannot be computed if it is '
+            with self.assertRaisesRegex(DataSourceError, 'The length of the data source cannot be computed if it is '
                                                        'defined as a file stream instead of a file path.'):
                 len(CsvReader(file))
 
@@ -429,13 +430,13 @@ class MyTestCase(unittest.TestCase):
                                                     r'in append mode \("wt"\).'):
                 CsvWriter(file, ['a', 'b', 'c'], Mode.APPEND)
         with open_file(DATA_FILE, Mode.APPEND) as file:
-            with self.assertRaisesRegex(DataFileError,
+            with self.assertRaisesRegex(DataSourceError,
                                         'The length of the data source cannot be computed if it is defined as a file '
                                         'stream, instead of a file path and this writer is opened in APPEND mode.'):
                 len(CsvWriter(file, ['a', 'b', 'c'], Mode.APPEND))
         os.remove(DATA_FILE)
 
-    def test_convert(self):
+    def test_convert(self) -> None:
         write_registers(open_writer(COMPRESSED_FILE, fieldnames=['a', 'b', 'c']))
         convert(COMPRESSED_FILE, XLS_FILE)
         with open_reader(COMPRESSED_FILE, ReadMode.DICT) as reader1:
@@ -444,6 +445,43 @@ class MyTestCase(unittest.TestCase):
                     dict2 = next(reader2)
                     self.assertDictEqual(dict1, dict2)
                 self.assertEqual(len(reader1), len(reader2))
+        os.remove(COMPRESSED_FILE)
+
+    def test_excel_append(self) -> None:
+        with ExcelWriter(XLS_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            writer.write_dicts(dicts)
+            self.assertEqual(len(writer), 2)
+        with ExcelWriter(XLS_FILE, mode=Mode.APPEND) as writer:
+            writer.write_lists(lists)
+            writer.write_objects(objects)
+            self.assertEqual(len(writer), 8)
+        with ExcelReader(XLS_FILE) as reader:
+            self.assertDictEqual(reader.read_row(), {'a': 10.0, 'b': 11.0, 'c': 12.0})
+            self.assertDictEqual(reader.read_row(), {'a': 13.0, 'b': 14.0, 'c': 15.0})
+            self.assertListEqual(reader.read_list(), [1, 2, 3])
+            self.assertListEqual(reader.read_list(), [4, 5, 6])
+            self.assertListEqual(reader.read_list(), [7, 8, 9])
+            self.assertListEqual(reader.read_list(), [16, 17, 18])
+            self.assertListEqual(reader.read_list(), [19, 20, 21])
+            self.assertListEqual(reader.read_list(), [22, 23, 24])
+            self.assertEqual(len(reader), 8)
+        with ExcelWriter(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            writer.write_dicts(dicts)
+            self.assertEqual(len(writer), 2)
+        with ExcelWriter(EXCEL_FILE, mode=Mode.APPEND) as writer:
+            writer.write_lists(lists)
+            writer.write_objects(objects)
+            self.assertEqual(len(writer), 8)
+        with ExcelReader(EXCEL_FILE) as reader:
+            self.assertDictEqual(reader.read_row(), {'a': 10.0, 'b': 11.0, 'c': 12.0})
+            self.assertDictEqual(reader.read_row(), {'a': 13.0, 'b': 14.0, 'c': 15.0})
+            self.assertListEqual(reader.read_list(), [1, 2, 3])
+            self.assertListEqual(reader.read_list(), [4, 5, 6])
+            self.assertListEqual(reader.read_list(), [7, 8, 9])
+            self.assertListEqual(reader.read_list(), [16, 17, 18])
+            self.assertListEqual(reader.read_list(), [19, 20, 21])
+            self.assertListEqual(reader.read_list(), [22, 23, 24])
+            self.assertEqual(len(reader), 8)
 
 
 if __name__ == '__main__':

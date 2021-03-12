@@ -1,17 +1,9 @@
 import gzip
 from abc import ABC, ABCMeta
 from csv import DictWriter, DictReader
-from enum import Enum
 from typing import Union, TextIO, BinaryIO, List
 
-from filedatasource.datafile import DataFile, DataReader, DataWriter, ReadMode, DataFileError
-
-
-class Mode(Enum):
-    """ The file open mode. """
-    APPEND = 'a'  # To append at the end of the file.
-    WRITE = 'w'  # To start a new file, this will destroy the previous one with the same name.
-    READ = 'r'  # To read the file.
+from filedatasource.datafile import DataReader, DataWriter, ReadMode, DataSourceError, Mode, DataFile
 
 
 def open_file(fname: str, mode: Mode, encoding: str = 'utf-8'):
@@ -21,7 +13,7 @@ def open_file(fname: str, mode: Mode, encoding: str = 'utf-8'):
     :param encoding: The file encoding.
     :return: A stream.
     """
-    open_func = gzip.open if fname.endswith('.gz') else open
+    open_func = gzip.open if fname.lower().endswith('.gz') else open
     return open_func(fname, f'{mode.value}t', encoding=encoding, newline='')
 
 
@@ -43,7 +35,7 @@ class CsvData(DataFile, ABC):
         :param mode: The open mode: Mode.APPEND, Mode.WRITE or Mode.READ.
         :param encoding: The file encoding.
         """
-        super().__init__(file_or_io)
+        DataFile.__init__(self, file_or_io)
         self.__encoding = encoding
         self._file = open_file(file_or_io, mode, self.encoding) if isinstance(file_or_io, str) else file_or_io
 
@@ -83,9 +75,8 @@ class CsvWriter(CsvData, DataWriter):
         :raises ValueError: If mode is not Mode.WRITE or Mode.APPEND or if file_or_io is a file stream with
           write or append modes but this modes does not correspond to the mode parameter.
         """
-        super().__init__(file_or_io, mode, encoding)
-        self.__check_params(mode)
-
+        CsvData.__init__(self, file_or_io, mode, encoding)
+        DataWriter.__init__(self, file_or_io, mode)
         self._fieldnames = self._parse_fieldnames(fieldnames)
 
         self._writer = DictWriter(self._file, fieldnames=self.fieldnames)
@@ -94,15 +85,6 @@ class CsvWriter(CsvData, DataWriter):
             self.__num_row = 0
         else:
             self.__num_row = None
-
-    def __check_params(self, mode):
-        if mode not in [Mode.WRITE, Mode.APPEND]:
-            raise ValueError(f'The {type(self).__name__} only allows modes {Mode.WRITE} or {Mode.APPEND}, not {mode}')
-        f_mode = self._file_stream.mode.strip() if self._file_stream and hasattr(self._file_stream, 'mode') else None
-        if f_mode and mode == Mode.WRITE and f_mode[0] != 'w':
-            raise ValueError(f'The reader is in mode {mode} but the file stream is in not in write mode ("{f_mode}").')
-        if f_mode and mode == Mode.APPEND and f_mode[0] != 'a':
-            raise ValueError(f'The reader is in mode {mode} but the file stream is in not in append mode ("{f_mode}").')
 
     def write_row(self, **row) -> None:
         """ Write a row.
@@ -125,7 +107,7 @@ class CsvWriter(CsvData, DataWriter):
                 with CsvReader(self.file_name, encoding=self.encoding) as reader:
                     self.__num_row = len(reader)
             else:
-                raise DataFileError(
+                raise DataSourceError(
                     f'The length of the data source cannot be computed if it is defined as a file stream, '
                     f'instead of a file path and this writer is opened in APPEND mode.')
         return self.__num_row
@@ -200,5 +182,5 @@ class CsvReader(CsvData, DataReader):
                 self.__length = sum(1 for _ in reader)
                 return self.__length
         # return self.__length
-        raise DataFileError(f'The length of the data source cannot be computed if it is defined as a file stream '
+        raise DataSourceError(f'The length of the data source cannot be computed if it is defined as a file stream '
                             f'instead of a file path.')
