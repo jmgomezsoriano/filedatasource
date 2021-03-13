@@ -5,8 +5,12 @@ from typing import List, Union, TextIO, BinaryIO, Any, Dict, Sequence, Callable
 from filedatasource.utils import dict2obj, attributes2list, attributes2dict, dict2list, dict_keys2list
 
 
-class DataFileError(Exception):
-    pass
+@unique
+class Mode(Enum):
+    """ The file open mode. """
+    APPEND = 'a'  # To append at the end of the file.
+    WRITE = 'w'  # To start a new file, this will destroy the previous one with the same name.
+    READ = 'r'  # To read the file.
 
 
 @unique
@@ -15,6 +19,10 @@ class ReadMode(Enum):
     OBJECT = auto()  # Return each row as object with attributes
     DICT = auto()  # Return each row as dictionary
     LIST = auto()  # Return each row as list of values
+
+
+class DataSourceError(Exception):
+    pass
 
 
 class DataFile(ABC):
@@ -55,6 +63,24 @@ class DataFile(ABC):
 
 class DataWriter(DataFile, ABC):
     __metaclass__ = ABCMeta
+
+    @property
+    def mode(self) -> Mode:
+        return self.__mode
+
+    def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], mode: Mode):
+        super(DataWriter, self).__init__(file_or_io)
+        self.__check_mode(mode)
+        self.__mode = mode
+
+    def __check_mode(self, mode):
+        if mode not in [Mode.WRITE, Mode.APPEND]:
+            raise ValueError(f'The {type(self).__name__} only allows modes {Mode.WRITE} or {Mode.APPEND}, not {mode}')
+        f_mode = self._file_stream.mode.strip() if self._file_stream and hasattr(self._file_stream, 'mode') else None
+        if f_mode and mode == Mode.WRITE and f_mode[0] != 'w':
+            raise ValueError(f'The reader is in mode {mode} but the file stream is in not in write mode ("{f_mode}").')
+        if f_mode and mode == Mode.APPEND and f_mode[0] != 'a':
+            raise ValueError(f'The reader is in mode {mode} but the file stream is in not in append mode ("{f_mode}").')
 
     @staticmethod
     def _parse_fieldnames(fieldnames: Union[List[str], Dict, object]) -> List[str]:
@@ -129,7 +155,7 @@ class DataWriter(DataFile, ABC):
 
         :param lst: The list of values. It is going to store in the same order than the fieldnames.
         """
-        self.write_dict({field: lst[i] for i, field in enumerate(self.fieldnames)})
+        self.write_dict({field: lst[i] for i, field in enumerate(self.fieldnames) if i < len(lst)})
 
     def write_lists(self, lists: Sequence[list]) -> None:
         """ Write a sequences of lists as a sequence of rows
@@ -160,7 +186,7 @@ class DataReader(DataFile, ABC):
         it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
         ReadMode.DICTIONARY or ReadMode.LIST, respectively.
         """
-        super().__init__(file_or_io)
+        super(DataReader, self).__init__(file_or_io)
         if mode not in [elem for elem in ReadMode]:
             ValueError(f'The mode argument must be ReadMode.OBJECT, ReadMode.DICT or ReadMode.LIST instead of {mode}.')
         self.__mode = mode

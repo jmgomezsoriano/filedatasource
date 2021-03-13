@@ -1,7 +1,16 @@
 from abc import ABC, ABCMeta
-from typing import Union, List
+from typing import Union, List, Tuple
 
+from filedatasource import Mode
 from filedatasource.datafile import DataReader, DataFile, DataWriter, ReadMode
+
+
+def open_excel(fname: str):
+    if fname.lower().endswith('.xlsx'):
+        return open_xlsx(fname)
+    elif fname.lower().endswith('.xls'):
+        return open_xls('.xls')
+    raise ValueError(f'The file name {fname} has to finish in .xls, or .xlsx to use this method.')
 
 
 def open_xls(fname: str):
@@ -32,7 +41,18 @@ def open_xlsx(fname: str):
     return openpyxl.load_workbook(fname)
 
 
-def create_xlsx(fname: str):
+def create_excel(fname: str, sheet: Union[str, int]) -> Tuple['Workbook', 'Worksheet', str]:
+    if not fname.lower().endswith('.xlsx') and not fname.lower().endswith('.xls'):
+        raise ValueError('The file name has to be the xlsx or xls extensions.')
+    if fname.lower().endswith('.xlsx'):
+        doc = create_xlsx(fname)
+        return doc, doc.add_worksheet(sheet if sheet else 'Sheet'), 'xlsx'
+    else:
+        doc = create_xls()
+        return doc, doc.add_sheet(sheet if sheet else 'Sheet'), 'xls'
+
+
+def create_xlsx(fname: str) -> 'Workbook':
     """  Create an Excel file in the xlsx format importing the module.
 
     :param fname: The path to save the xlsx file.
@@ -46,7 +66,7 @@ def create_xlsx(fname: str):
     return xlsxwriter.Workbook(fname)
 
 
-def create_xls():
+def create_xls() -> 'Workbook':
     """  Create an Excel file in the old xls format importing the module.
 
     :return: The workbook which is a instance of xlrd.book.Book class.
@@ -89,7 +109,7 @@ class ExcelData(DataFile, ABC):
         :param fname: The file path to the Excel file.
         :param sheet: The sheet to read/write.
         """
-        super().__init__(fname)
+        DataFile.__init__(self, fname)
         self.__sheet_name = sheet if sheet else 0
         self._sheet = None
         self._fieldnames = []
@@ -108,12 +128,12 @@ class ExcelReader(ExcelData, DataReader):
         """
         super(ExcelReader, self).__init__(fname, sheet=sheet)
         DataReader.__init__(self, fname, mode=mode)
-        if fname.endswith('.xlsx'):
+        if fname.lower().endswith('.xlsx'):
             self.__doc = open_xlsx(fname)
             self._sheet = self.__doc[sheet] if isinstance(sheet, str) else self.__doc[self.__doc.sheetnames[sheet]]
             self._fieldnames = [cell.value for cell in next(self.sheet.rows)]
             self.__type = 'xlsx'
-        elif fname.endswith('.xls'):
+        elif fname.lower().endswith('.xls'):
             doc = open_xls(fname)
             self.__doc = doc
             self._sheet = doc.sheet_by_name(sheet) if isinstance(sheet, str) else doc.sheet_by_index(sheet)
@@ -124,7 +144,7 @@ class ExcelReader(ExcelData, DataReader):
 
         self.__row = 1
 
-    def read_row(self) -> object:
+    def read_row(self) -> dict:
         """ Read a row of the Excel file as a dict.
 
         :return: A dictionary where the keys are the fieldnames, and their values the row values.
@@ -165,25 +185,30 @@ class ExcelReader(ExcelData, DataReader):
 
 class ExcelWriter(ExcelData, DataWriter):
     """ The class to create an Excel file easily """
-    def __init__(self, fname: str, sheet: Union[str, int] = None, fieldnames: Union[List[str], type, object] = None):
+    def __init__(self, fname: str, sheet: Union[str, int] = 0, fieldnames: Union[List[str], type, object] = None,
+                 mode: Mode = Mode.WRITE):
         """ Constructor.
         :param fname: The file path to the Excel file.
         :param sheet: The sheet to read/write.
         :param fieldnames: The list of fieldnames. It could be given as a list or a type or object with properties or
         attributes.
+        :param mode: The writing mode: Mode.APPEND or Mode.WRITE. By default Mode.WRITE.
         """
-        super().__init__(fname, sheet)
-        self._fieldnames = self._parse_fieldnames(fieldnames)
-        if fname.endswith('.xlsx'):
-            self._doc = create_xlsx(fname)
-            self._sheet = self._doc.add_worksheet(sheet if sheet else 'Sheet')
-            self.__type = 'xlsx'
-        else:
-            self._doc = create_xls()
-            self._sheet = self._doc.add_sheet(sheet if sheet else 'Sheet')
-            self.__type = 'xls'
+        DataWriter.__init__(self, fname, mode)
+        ExcelData.__init__(self, fname, sheet=sheet)
         self.__num_row = 0
-        self.write_list(self.fieldnames)
+        if mode == Mode.WRITE:
+            if not fieldnames:
+                raise ValueError('The fieldnames parameters must contain a least a field name in write mode.')
+            self._fieldnames = self._parse_fieldnames(fieldnames)
+            self._doc, self._sheet, self.__type = create_excel(fname, sheet)
+            self.write_list(self.fieldnames)
+        elif mode == Mode.APPEND:
+            with ExcelReader(fname, sheet, ReadMode.DICT) as reader:
+                self._fieldnames = self._parse_fieldnames(fieldnames) if fieldnames else reader.fieldnames
+                self._doc, self._sheet, self.__type = create_excel(fname, sheet)
+                self.write_list(self.fieldnames)
+                self.import_reader(reader)
 
     def write_row(self, **row) -> None:
         """ Append a row to the sheet.

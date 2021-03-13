@@ -16,9 +16,9 @@ def open_reader(fname: str, mode: ReadMode = ReadMode.OBJECT) -> DataReader:
     :return: A CsvReader or a ExcelReader depending on the file extension.
     :raises ValueError: If the file name is not a CSV (compressed or not) or Excel (XLSX, XLS) file.
     """
-    if fname.endswith('.csv') or fname.endswith('.csv.gz'):
+    if fname.lower().endswith('.csv') or fname.lower().endswith('.csv.gz'):
         return CsvReader(fname, mode=mode)
-    if fname.endswith('.xls') or fname.endswith('.xlsx'):
+    if fname.lower().endswith('.xls') or fname.lower().endswith('.xlsx'):
         return ExcelReader(fname, mode=mode)
     raise ValueError(f'The file name {fname} has to finish in .csv, .csv.gz, .xls, or .xlsx to use this function')
 
@@ -33,9 +33,9 @@ def open_writer(fname: str, fieldnames: List[str]) -> DataWriter:
     :return: A CsvWriter or a ExcelWriter depending on the file extension.
     :raises ValueError: If the file name is not a CSV (compressed or not) or Excel (XLSX, XLS) file.
     """
-    if fname.endswith('.csv') or fname.endswith('.csv.gz'):
+    if fname.lower().endswith('.csv') or fname.lower().endswith('.csv.gz'):
         return CsvWriter(fname, fieldnames=fieldnames)
-    if fname.endswith('.xls') or fname.endswith('.xlsx'):
+    if fname.lower().endswith('.xls') or fname.lower().endswith('.xlsx'):
         return ExcelWriter(fname, fieldnames=fieldnames)
     raise ValueError(f'The file name {fname} has to finish in .csv, .csv.gz, .xls, or .xlsx to use this function')
 
