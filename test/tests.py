@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode, DataWriter, DataReader, \
     open_reader, open_writer, excel2list, excel2dict, csv2dict, csv2objects, objects2csv, dict2csv, list2csv, csv2list, \
-    save, load, convert
+    save, load, convert, load_lists
 from filedatasource.csvfile import open_file
 from filedatasource.datafile import DataSourceError
 
@@ -465,6 +465,7 @@ class MyTestCase(unittest.TestCase):
             self.assertListEqual(reader.read_list(), [19, 20, 21])
             self.assertListEqual(reader.read_list(), [22, 23, 24])
             self.assertEqual(len(reader), 8)
+        os.remove(XLS_FILE)
         with ExcelWriter(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
             writer.write_dicts(dicts)
             self.assertEqual(len(writer), 2)
@@ -482,6 +483,34 @@ class MyTestCase(unittest.TestCase):
             self.assertListEqual(reader.read_list(), [19, 20, 21])
             self.assertListEqual(reader.read_list(), [22, 23, 24])
             self.assertEqual(len(reader), 8)
+        os.remove(EXCEL_FILE)
+
+    def test_odd_actions(self):
+        # Checking writing a list is sorter than the field names
+        with open_writer(COMPRESSED_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            writer.write_list([18324])
+        lists = load_lists(COMPRESSED_FILE)
+        self.assertEqual(len(lists), 1)
+        self.assertListEqual(lists[0], ['18324', '', ''])
+        with open_writer(DATA_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            writer.write_list([18324])
+        lists = load_lists(DATA_FILE)
+        self.assertEqual(len(lists), 1)
+        self.assertListEqual(lists[0], ['18324', '', ''])
+        with open_writer(EXCEL_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            writer.write_list([18324])
+        lists = load_lists(EXCEL_FILE)
+        self.assertEqual(len(lists), 1)
+        self.assertListEqual(lists[0], [18324, None, None])
+        with open_writer(XLS_FILE, fieldnames=['a', 'b', 'c']) as writer:
+            writer.write_list([18324])
+        lists = load_lists(XLS_FILE)
+        self.assertEqual(len(lists), 1)
+        self.assertListEqual(lists[0], [18324, '', ''])
+        os.remove(DATA_FILE)
+        os.remove(COMPRESSED_FILE)
+        os.remove(EXCEL_FILE)
+        os.remove(XLS_FILE)
 
 
 if __name__ == '__main__':
