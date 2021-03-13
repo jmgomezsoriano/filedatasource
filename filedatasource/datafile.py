@@ -155,7 +155,7 @@ class DataWriter(DataFile, ABC):
 
         :param lst: The list of values. It is going to store in the same order than the fieldnames.
         """
-        self.write_dict({field: lst[i] for i, field in enumerate(self.fieldnames)})
+        self.write_dict({field: lst[i] for i, field in enumerate(self.fieldnames) if i < len(lst)})
 
     def write_lists(self, lists: Sequence[list]) -> None:
         """ Write a sequences of lists as a sequence of rows
