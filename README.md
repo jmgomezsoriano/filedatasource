@@ -340,6 +340,39 @@ from filedatasource import convert
 
 convert('data.csv', 'data.xlsx')
 ```
+## Reading CSV with field types
+
+In Excel files you can save information maintaining their original data types. For example, if you store a row with
+different field types, you can retrieve the information with the same vale types. For instance:
+
+```python
+from filedatasource import  ExcelWriter, ExcelReader
+
+with ExcelWriter('data.xlsx', fieldnames=['a', 'b', 'c', 'd']) as writer:
+    writer.write(['One', 2, 3.0, True])
+with ExcelReader('data.xlsx') as reader:
+    print(reader.read_list()) # --> print ['One', 2, 3.0, True]
+```
+
+However, a CSV file does not contain any information about field types. And using CsvWriter and CsvReader in the 
+same way you will get the list ['One', '2', '3.0', 'True']. That means, all the values in string format. 
+To solve this, you can use the **types** parameter as following:
+
+```python
+from filedatasource import  CsvWriter, CsvReader
+
+with CsvWriter('data.csv', fieldnames=['a', 'b', 'c', 'd']) as writer:
+    writer.write(['One', 2, 3.0, True])
+# Define how the data type of each field using a list
+with CsvReader('data.csv', types=[str, int, float, bool]) as reader:
+    print(reader.read_list()) # -> print ['One', 2, 3.0, True])
+# Define how the data type of each field using a dictionary
+with CsvReader('data.csv', types={'a': str, 'b': int, 'c': float, 'd': bool}) as reader:
+    print(reader.read_list()) # -> print ['One', 2, 3.0, True])
+```
+
+This way, you can define the data values in the correct field type. If there are fields without defining, then 
+a string value will be returned for those fields.
 
 ## Writers with predefined fieldnames
 

@@ -1,7 +1,7 @@
 import gzip
 from abc import ABC, ABCMeta
 from csv import DictWriter, DictReader
-from typing import Union, TextIO, BinaryIO, List
+from typing import Union, TextIO, BinaryIO, List, Type, Dict
 
 from filedatasource.datafile import DataReader, DataWriter, ReadMode, DataSourceError, Mode, DataFile
 
@@ -141,7 +141,7 @@ class CsvReader(CsvData, DataReader):
         return list(self._reader.fieldnames)
 
     def __init__(self, file_or_io: Union[str, TextIO, BinaryIO], mode: ReadMode = ReadMode.OBJECT,
-                 encoding: str = 'utf-8'):
+                 encoding: str = 'utf-8', types: Union[List[Type], Dict[str, Type]] = None):
         """ Constructor of this CSV reader.
 
         :param file_or_io: The file path or an opened stream to use. If it is a file path and it ends in .gz, then
@@ -158,14 +158,23 @@ class CsvReader(CsvData, DataReader):
         DataReader.__init__(self, file_or_io, mode)
         self._reader = DictReader(self._file)
         self.__length = None
+        if types and not isinstance(types, List) and not isinstance(types, Dict):
+            raise ValueError('If the parameter types is defined, it must be a list o dict.')
+        self.__types = types if types else []
 
     def read_row(self) -> dict:
         """ Read a row of the CSV file.
 
-        :return: An Python object with fields that represents the information of the file. The name of these fields
+        :return: An Python dictionary with fields that represents the information of the file. The name of these fields
         correspond with the name of the CSV head fields.
         """
-        return next(self._reader)
+        d = next(self._reader)
+        if not self.__types:
+            return d
+        if isinstance(self.__types, List):
+            return {k: (self.__types[i](v) if i < len(self.__types) else v) for i, (k, v) in enumerate(d.items())}
+
+        return {k: (self.__types[k](v) if k in self.__types else v) for k, v in d.items()}
 
     def __len__(self) -> int:
         """ Calculate the number of rows. The first time you call this method it read the whole file once and
