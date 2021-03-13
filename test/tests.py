@@ -512,6 +512,24 @@ class MyTestCase(unittest.TestCase):
         os.remove(EXCEL_FILE)
         os.remove(XLS_FILE)
 
+    def test_csv_types(self) -> None:
+        with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c', 'd']) as writer:
+            writer.write(['One', 2, 3.0, True])
+        with CsvReader(DATA_FILE, types=[str, int, float, bool]) as reader:
+            self.assertListEqual(reader.read_list(), ['One', 2, 3.0, True])
+        with CsvReader(DATA_FILE, types={'a': str, 'b': int, 'c': float, 'd': bool}) as reader:
+            self.assertListEqual(reader.read_list(), ['One', 2, 3.0, True])
+        with CsvReader(DATA_FILE, types=[str, int, float]) as reader:
+            self.assertListEqual(reader.read_list(), ['One', 2, 3.0, 'True'])
+        os.remove(DATA_FILE)
+
+    def test_errors(self) -> None:
+        with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c', 'd']) as writer:
+            writer.write(['One', 2, 3.0, True])
+        with CsvReader(DATA_FILE, types=[int, int, float]) as reader:
+            with self.assertRaisesRegex(ValueError, r'invalid literal for int\(\) with base 10: \'One\''):
+                self.assertListEqual(reader.read_list(), ['One', 2, 3.0, 'True'])
+        os.remove(DATA_FILE)
 
 if __name__ == '__main__':
     unittest.main()
