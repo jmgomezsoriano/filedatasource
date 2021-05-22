@@ -1,5 +1,20 @@
 # File data-source
-Convert several file data sources (like typical CSV or Excel files) to Python objects or dictionaries easily.
+The easier way to parse CSV and Excel files, even compressed CSV files.
+
+For example, with 2 or 1 line you can read a Excel or CSV file, even if it is a compressed CSV file:
+
+```python
+from filedatasource 
+# Read a whole Excel file and obtain a list of objects, with the fieldnames as object attributes
+with open_reader('data.csv.gz') as reader:
+    objs = reader.read_objects()
+print(lists[0].name)
+
+# Or, even, easier:
+objs = excel2objects('data.xlsx')
+print(lists[0].name)
+```
+
 
 ## Install
 
