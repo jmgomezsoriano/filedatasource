@@ -1,15 +1,12 @@
 import os
 import setuptools
 
-
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 
 class CleanCommand(setuptools.Command):
-    """
-    Custom clean command to tidy up the project root.
-    """
+    """ Custom clean command to tidy up the project root. """
     user_options = []
 
     def initialize_options(self):
@@ -23,9 +20,7 @@ class CleanCommand(setuptools.Command):
 
 
 class PrepublishCommand(setuptools.Command):
-    """
-    Custom prepublish command.
-    """
+    """  Custom prepublish command. """
     user_options = []
 
     def initialize_options(self):
@@ -45,13 +40,13 @@ setuptools.setup(
         'prepublish': PrepublishCommand,
     },
     name='filedatasource',
-    long_description=long_description,
-    long_description_content_type='text/markdown',
-    version='1.1.10',
+    version='1.1.12',
     url='https://github.com/jmgomezsoriano/filedatasource',
-    license='GPLv3',
+    license='lGPLv3',
     author='José Manuel Gómez Soriano',
     author_email='jmgomez.soriano@gmail.com',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     description='Convert several file data sources (like typical CSV or Excel) to python objects in a easy manner.',
     packages=setuptools.find_packages(exclude=["test"]),
     package_dir={'filedatasource': 'filedatasource'},

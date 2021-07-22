@@ -521,6 +521,12 @@ class MyTestCase(unittest.TestCase):
             self.assertListEqual(reader.read_list(), ['One', 2, 3.0, True])
         with CsvReader(DATA_FILE, types=[str, int, float]) as reader:
             self.assertListEqual(reader.read_list(), ['One', 2, 3.0, 'True'])
+        l = csv2list(DATA_FILE, types=[str, int, float])
+        self.assertListEqual(l[0], ['One', 2, 3.0, 'True'])
+        d = csv2dict(DATA_FILE, types=[str, int, float])
+        self.assertDictEqual(d[0], {'a': 'One', 'b': 2, 'c': 3.0, 'd': 'True'})
+        o = csv2objects(DATA_FILE, types=[str, int, float])
+        self.assertEqual(o[0].c, 3.0)
         os.remove(DATA_FILE)
 
     def test_errors(self) -> None:
