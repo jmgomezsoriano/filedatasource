@@ -1,4 +1,4 @@
-from typing import Union, List, TextIO, BinaryIO, Any, Dict
+from typing import Union, List, TextIO, BinaryIO, Any, Dict, Type
 
 from filedatasource import CsvReader, ExcelReader, CsvWriter, ExcelWriter, Mode, ReadMode, DataWriter, DataReader
 from filedatasource.utils import attributes2list, dict_keys2list
@@ -131,37 +131,43 @@ def objects2excel(fname: str, data: List[object], sheet: Union[str, int] = 0,
         writer.write_objects(data)
 
 
-def csv2list(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8') -> List[List[Any]]:
+def csv2list(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8',
+             types: Union[List[Type], Dict[str, Type]] = None) -> List[List[Any]]:
     """ Read a CSV file (compressed or not) and return a list of lists with the file rows.
 
     :param file_or_io: The file path or the file stream.
     :param encoding: The file encoding.
+    :param types: The type of each field.
     :return: A List of lists with the file rows. Each column value is stored as list element.
     """
-    with CsvReader(file_or_io, ReadMode.LIST, encoding) as reader:
+    with CsvReader(file_or_io, ReadMode.LIST, encoding, types) as reader:
         return reader.read_lists()
 
 
-def csv2dict(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8') -> List[Dict]:
+def csv2dict(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8',
+             types: Union[List[Type], Dict[str, Type]] = None) -> List[Dict]:
     """ Read a CSV file (compressed or not) and return a list of dictionaries with the file content..
 
     :param file_or_io: The file path or the file stream.
     :param encoding: The file encoding.
+    :param types: The type of each field.
     :return: A list of dictionaries. Each dictionary represents a row and it contains as keys the column name and
     its value the column value.
     """
-    with CsvReader(file_or_io, ReadMode.DICT, encoding) as reader:
+    with CsvReader(file_or_io, ReadMode.DICT, encoding, types) as reader:
         return reader.read_rows()
 
 
-def csv2objects(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8') -> List[object]:
+def csv2objects(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8',
+                types: Union[List[Type], Dict[str, Type]] = None) -> List[object]:
     """ Read a CSV file (compressed or not) and return a list of objects.
 
     :param file_or_io: The file path or the file stream.
     :param encoding: The file encoding.
+    :param types: The type of each field.
     :return: A list of objects. Each object is a file row with the attributes as column names and its value.
     """
-    with CsvReader(file_or_io, ReadMode.OBJECT, encoding) as reader:
+    with CsvReader(file_or_io, ReadMode.OBJECT, encoding, types) as reader:
         return reader.read_objects()
 
 
