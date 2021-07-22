@@ -150,6 +150,7 @@ class CsvReader(CsvData, DataReader):
         :param mode: The default mode to read the rows. When the reader is iterated,
           it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
           ReadMode.DICTIONARY or ReadMode.LIST, respectively.
+        :param types: The type of each field.
         :raises ValueError: If the read mode is not ReadMode.OBJECT, ReadMode.DICT or ReadMode.LIST.
         """
         if mode not in [ReadMode.OBJECT, ReadMode.DICT, ReadMode.LIST]:
