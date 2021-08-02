@@ -40,7 +40,7 @@ setuptools.setup(
         'prepublish': PrepublishCommand,
     },
     name='filedatasource',
-    version='1.1.12',
+    version='1.1.13',
     url='https://github.com/jmgomezsoriano/filedatasource',
     license='lGPLv3',
     author='José Manuel Gómez Soriano',
