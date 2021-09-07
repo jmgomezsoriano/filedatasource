@@ -118,7 +118,8 @@ class CsvReader(CsvData, DataReader):
     A CSV reader to read a typical CSV file with head. It is very easy to use. For example, if the file 'data.csv'
     contains:
 
-    .. code-block:
+    .. code-block:: text
+
         id,name,surname,address
         1,John,Smith,Oxford street
         ---
@@ -193,4 +194,4 @@ class CsvReader(CsvData, DataReader):
                 return self.__length
         # return self.__length
         raise DataSourceError(f'The length of the data source cannot be computed if it is defined as a file stream '
-                            f'instead of a file path.')
+                              f'instead of a file path.')
