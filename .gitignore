@@ -131,3 +131,6 @@ dmypy.json
 /test/data.csv.gz
 /test/data.xlsx
 /test/data.xls
+
+# PyCharm
+/.idea/
