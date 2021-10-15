@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode, DataWriter, DataReader, \
     open_reader, open_writer, excel2list, excel2dict, csv2dict, csv2objects, objects2csv, dict2csv, list2csv, csv2list, \
-    save, load, convert, load_lists
+    save, load, convert, load_lists, sheets
 from filedatasource.csvfile import open_file
 from filedatasource.datafile import DataSourceError
 
@@ -529,6 +529,10 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(o[0].c, 3.0)
         os.remove(DATA_FILE)
 
+    def test_sheet_names(self) -> None:
+        self.assertListEqual(sheets('Example.xls'), ['Clients', 'Suppliers'])
+        self.assertListEqual(sheets('Example.xlsx'), ['Clients', 'Suppliers'])
+
     def test_errors(self) -> None:
         with CsvWriter(DATA_FILE, fieldnames=['a', 'b', 'c', 'd']) as writer:
             writer.write(['One', 2, 3.0, True])
@@ -536,6 +540,7 @@ class MyTestCase(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, r'invalid literal for int\(\) with base 10: \'One\''):
                 self.assertListEqual(reader.read_list(), ['One', 2, 3.0, 'True'])
         os.remove(DATA_FILE)
+
 
 if __name__ == '__main__':
     unittest.main()

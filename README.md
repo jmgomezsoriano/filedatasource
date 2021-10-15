@@ -166,6 +166,16 @@ with CsvReader('data.xslx') as reader:
 However, the __CsvReader__ needs, previously, to pre-read the entire file to calculate the number of rows, and it 
 might take a bit longer. This problem does not occur with the Excel file because it is fully loaded into memory.
 
+In an Excel file you can know the list of sheet names by means of sheets():
+
+```python
+from filedatasource import sheets
+
+# It detects the type of the Excel file by the extension of the filename.
+sheets('test/Example.xlsx')
+sheets('test/Example.xls')
+```
+
 ## How to write a data file
 
 With **filedatasource** is very easy to write, both, a CSV file (compressed or not) and an Excel file (xls or xlsx).

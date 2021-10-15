@@ -9,7 +9,7 @@ def open_excel(fname: str):
     if fname.lower().endswith('.xlsx'):
         return open_xlsx(fname)
     elif fname.lower().endswith('.xls'):
-        return open_xls('.xls')
+        return open_xls(fname)
     raise ValueError(f'The file name {fname} has to finish in .xls, or .xlsx to use this method.')
 
 
@@ -39,6 +39,19 @@ def open_xlsx(fname: str):
     except ImportError:
         raise ModuleNotFoundError('openpyxl is required. Please, install it with:\n\npip install openpyxl')
     return openpyxl.load_workbook(fname)
+
+
+def sheets(fname: str) -> List[str]:
+    """ Get the sheet names of the Excel files.
+
+    :param fname: The path to the Excel file.
+    :return: A list the seet names of that Excel file.
+    """
+    doc = open_excel(fname)
+    if fname.lower().endswith('.xls'):
+        return doc.sheet_names()
+    if fname.lower().endswith('.xlsx'):
+        return doc.sheetnames
 
 
 def create_excel(fname: str, sheet: Union[str, int]) -> Tuple['Workbook', 'Worksheet', str]:
