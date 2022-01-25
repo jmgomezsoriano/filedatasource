@@ -1,3 +1,9 @@
+""" This file is to do unit tests for all the functions and classes of Python module.
+
+To execute this, it is recommended to install the requirement file:
+
+pip install -r requirements.txt
+"""
 import os
 import unittest
 from typing import List
@@ -6,7 +12,7 @@ from tqdm import tqdm
 
 from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode, DataWriter, DataReader, \
     open_reader, open_writer, excel2list, excel2dict, csv2dict, csv2objects, objects2csv, dict2csv, list2csv, csv2list, \
-    save, load, convert, load_lists, sheets
+    save, load, convert, load_lists, sheets, objects2excel
 from filedatasource.csvfile import open_file
 from filedatasource.datafile import DataSourceError
 
@@ -540,6 +546,16 @@ class MyTestCase(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, r'invalid literal for int\(\) with base 10: \'One\''):
                 self.assertListEqual(reader.read_list(), ['One', 2, 3.0, 'True'])
         os.remove(DATA_FILE)
+
+    def test_without_filenames(self) -> None:
+        employees = [
+            Employee('John', 'Smith'),
+            Employee('Alice', 'Cooper'),
+            Employee('Bob', 'Dylan')
+        ]
+        objects2excel('test_without_filenames.xlsx', employees)
+        objects2excel('test_without_filenames.xlsx', objects)
+        # os.remove('test_without_filenames.xlsx')
 
 
 if __name__ == '__main__':

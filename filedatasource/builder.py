@@ -65,9 +65,11 @@ def dict2csv(file_or_io: Union[str, TextIO, BinaryIO], data: List[Dict],
     :param data: The list of dictionaries. Each dictionary has to contain as keys the fieldnames and as value
         the row data to store.
     :param fieldnames: The field names of this CSV.
+       If this parameter is not given, then use the first dictionary keys as fieldnames.
     :param mode: The writing mode: Mode.APPEND or Mode.WRITE. By default Mode.WRITE.
     :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
     """
+    fieldnames = fieldnames if fieldnames or not data else [k for k in data[0]]
     with CsvWriter(file_or_io, fieldnames, mode, encoding) as writer:
         writer.write_dicts(data)
 
@@ -81,9 +83,11 @@ def objects2csv(file_or_io: Union[str, TextIO, BinaryIO], data: List[object],
         a compressed file is created using gzip.
     :param data: The sequence of objects to write with public attributes or properties.
     :param fieldnames: The field names of this CSV.
+       If this parameter is not given, then use the first object attributes as fieldnames.
     :param mode: The writing mode: Mode.APPEND or Mode.WRITE. By default Mode.WRITE.
     :param encoding: The encoding (it is only used if the parameter file_or_io is a file path).
     """
+    fieldnames = fieldnames if fieldnames or not data else attributes2list(data[0])
     with CsvWriter(file_or_io, fieldnames, mode, encoding) as writer:
         writer.write_objects(data)
 
@@ -111,8 +115,9 @@ def dict2excel(fname: str, data: List[Dict], sheet: Union[str, int] = 0,
         the row data to store.
     :param sheet: The sheet to write.
     :param fieldnames: The list of fieldnames. It could be given as a list or a type or object with properties or
-    attributes.
+    attributes. If this parameter is not given, then use the first dictionary keys as fieldnames.
     """
+    fieldnames = fieldnames if fieldnames or not data else [k for k in data[0]]
     with ExcelWriter(fname, sheet, fieldnames) as writer:
         writer.write_dicts(data)
 
@@ -125,9 +130,10 @@ def objects2excel(fname: str, data: List[object], sheet: Union[str, int] = 0,
     :param data: The sequence of objects to write with public attributes or properties.
     :param sheet: The sheet to write.
     :param fieldnames: The list of fieldnames. It could be given as a list or a type or object with properties or
-    attributes.
+    attributes. If this parameter is not given, then use the first object attributes as fieldnames.
     """
-    with ExcelWriter(fname, fieldnames, sheet) as writer:
+    fieldnames = fieldnames if fieldnames or not data else attributes2list(data[0])
+    with ExcelWriter(fname, sheet, fieldnames) as writer:
         writer.write_objects(data)
 
 
