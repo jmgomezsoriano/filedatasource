@@ -1,6 +1,8 @@
+from os import PathLike
 from typing import Union, List, TextIO, BinaryIO, Any, Dict, Type
 
 from filedatasource import CsvReader, ExcelReader, CsvWriter, ExcelWriter, Mode, ReadMode, DataWriter, DataReader
+from filedatasource.datafile import DataSourceError
 from filedatasource.utils import attributes2list, dict_keys2list
 
 
@@ -323,3 +325,77 @@ def convert(fr_file: str, to_file) -> None:
     with open_reader(fr_file, ReadMode.DICT) as reader:
         with open_writer(to_file, reader.fieldnames) as writer:
             writer.import_reader(reader)
+
+
+def file2dict(filename: Union[PathLike, str, bytes]) -> dict:
+    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
+        return csv2dict(filename)
+    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
+        return excel2dict(filename)
+    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
+
+
+def file2objects(filename: Union[PathLike, str, bytes]) -> dict:
+    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
+        return csv2objects(filename)
+    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
+        return excel2objects(filename)
+    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
+
+
+def file2list(filename: Union[PathLike, str, bytes]) -> dict:
+    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
+        return csv2list(filename)
+    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
+        return excel2list(filename)
+    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
+
+
+def list2file(filename: Union[PathLike, str, bytes],
+              data: List[list],
+              fieldnames: Union[List[str], type, object, None]) -> None:
+    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
+        return list2csv(filename, data, fieldnames)
+    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
+        return list2excel(filename, data, fieldnames=fieldnames)
+    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
+
+
+def dict2file(filename: Union[PathLike, str, bytes],
+              data: List[dict],
+              fieldnames: Union[List[str], type, object, None] = None) -> None:
+    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
+        return dict2csv(filename, data, fieldnames)
+    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
+        return dict2excel(filename, data, fieldnames=fieldnames)
+    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
+
+
+def objects2file(filename: Union[PathLike, str, bytes],
+              data: List[object],
+              fieldnames: Union[List[str], type, object, None] = None) -> None:
+    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
+        return objects2csv(filename, data, fieldnames)
+    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
+        return objects2excel(filename, data, fieldnames=fieldnames)
+    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
+
+
+def equals(filename1: Union[PathLike, str, bytes], filename2: Union[PathLike, str, bytes]) -> bool:
+    """ Check if two file data sources have the same content.
+
+    :param filename1:
+    :param filename2:
+    :return:
+    """
+    # Load the files
+    dict1, dict2 = file2dict(filename1), file2dict(filename2)
+    # Check if both lists of dictionaries has the same length
+    if len(dict1) != len(dict2):
+        return False
+    # Check each of the element of the dictionaries
+    for i, d1 in enumerate(dict1):
+        for key, value in d1:
+            if d1[key] != dict2[i][key]:
+                return False
+    return True
