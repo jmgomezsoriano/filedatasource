@@ -21,7 +21,6 @@ with open_reader('data.csv.gz') as reader:
        print(obj.name)
 ```
 
-
 ## Install
 
 ```shell script
@@ -341,7 +340,7 @@ with ExcelReader('data.xlsx') as reader:
 print(lists[0].name)
 ```
 
-## Convert from CSV to Excel and viceversa
+## Convert from CSV to Excel and vice-versa
 
 With these tools, it is very simply to convert from a CSV to an Excel file and viceversa:
 
@@ -371,6 +370,23 @@ from filedatasource import convert
 
 convert('data.csv', 'data.xlsx')
 ```
+
+## Compare the content of two files
+
+You can use __equals()__ to check if two file data sources have the same content independently 
+if they are the same file type or different.
+However, if one of the files are CSV and the other Excel, and some columns are not strings,
+the comparison are going to fail. It is better to compare the same type of files or
+to work only with strings to be sure the comparison is correct.
+
+The syntax os __equals()__ is very easy:
+
+```python
+from filedatasource import equals
+
+print(equals('test.xlsx', 'test.csv.gz'))
+```
+
 ## Reading CSV with field types
 
 In Excel files you can save information maintaining their original data types. For example, if you store a row with
@@ -504,8 +520,10 @@ data_objects = [
 list2csv('data.csv', data_list, fieldnames=['a', 'b', 'c'])
 # Write a list of dicts into a CSV file
 dict2csv('data.csv', data_dict, fieldnames=['a', 'b', 'c'])
+dict2csv('data.csv', data_dict) # Use the key as fieldnames
 # Write a list of objects into a compressed CSV file
 objects2csv('data.csv.gz', data_objects, fieldnames=['a', 'b', 'c'])
+objects2csv('data.csv.gz', data_objects) # Use object attributes as fieldnames
 # Write a list of lists into an Excel file
 list2excel('data.xlsx', data_list, fieldnames=['a', 'b', 'c'])
 # Write a list of dicts into an Excel file
@@ -532,7 +550,6 @@ print(lists[0]['name'])
 objs = excel2objects('data.xlsx')
 print(lists[0].name)
 ```
-
 ## Builders
 
 You have two builders to create readers or writers based on the file extension with default arguments.

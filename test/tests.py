@@ -8,11 +8,13 @@ import os
 import unittest
 from typing import List
 
+from mysutils.tmp import removable_files
 from tqdm import tqdm
 
 from filedatasource import CsvWriter, CsvReader, ExcelWriter, ExcelReader, Mode, ReadMode, DataWriter, DataReader, \
     open_reader, open_writer, excel2list, excel2dict, csv2dict, csv2objects, objects2csv, dict2csv, list2csv, csv2list, \
     save, load, convert, load_lists, sheets, objects2excel
+from filedatasource.builder import equals, save_objs, load_dicts, load_objs, save_dicts, save_lists
 from filedatasource.csvfile import open_file
 from filedatasource.datafile import DataSourceError
 
@@ -31,20 +33,23 @@ def write_registers(writer) -> None:
 
 class Employee(object):
     @property
-    def full_name(self) -> str:
-        return self.name + ' ' + self.surname
+    def surname(self) -> str:
+        return self.__surname
 
     @property
     def name(self) -> str:
         return self.__name
 
     @property
-    def surname(self) -> str:
-        return self.__surname
+    def full_name(self) -> str:
+        return self.name + ' ' + self.surname
 
     def __init__(self, name: str, surname: str):
         self.__name = name
         self.__surname = surname
+
+    def __eq__(self, other: 'Employee') -> bool:
+        return self.name == other.name and self.surname == other.surname
 
 
 class Example(object):
@@ -65,6 +70,21 @@ objects = [
     Example(16, 17, 18),
     Example(19, 20, 21),
     Example(22, 23, 24)
+]
+employees = [
+    Employee('John', 'Smith'),
+    Employee('Alice', 'Cooper'),
+    Employee('Bob', 'Dylan')
+]
+employees_dict = [
+    {'name': 'John', 'surname': 'Smith', 'full_name': 'John Smith'},
+    {'name': 'Alice', 'surname': 'Cooper', 'full_name': 'Alice Cooper'},
+    {'name': 'Bob', 'surname': 'Dylan', 'full_name': 'Bob Dylan'}
+]
+employees_list = [
+    ['John', 'Smith', 'John Smith'],
+    ['Alice', 'Cooper', 'Alice Cooper'],
+    ['Bob', 'Dylan', 'Bob Dylan']
 ]
 
 
@@ -548,13 +568,67 @@ class MyTestCase(unittest.TestCase):
         os.remove(DATA_FILE)
 
     def test_without_filenames(self) -> None:
-        employees = [
-            Employee('John', 'Smith'),
-            Employee('Alice', 'Cooper'),
-            Employee('Bob', 'Dylan')
-        ]
-        objects2excel('test_without_filenames.xlsx', employees)
-        objects2excel('test_without_filenames.xlsx', objects)
+        for files in [['object.xlsx', 'dicts.xlsx', 'lists.xlsx'],
+                      ['object.xls', 'dicts.xls', 'lists.xls']]:
+            with removable_files(*files) as (f1, f2, f3):
+                save_objs(f1, employees)
+                self.assertListEqual(excel2dict(f1), employees_dict)
+                self.assertListEqual(load_dicts(f1), employees_dict)
+                self.assertListEqual([Employee(d['name'], d['surname']) for d in employees_dict], load_objs(f1))
+                self.assertListEqual(load_lists(f1), [[d['full_name'], d['name'], d['surname']] for d in employees_dict])
+                save_dicts(f2, employees_dict)
+                self.assertListEqual(load_dicts(f2), employees_dict)
+                self.assertListEqual([Employee(d['name'], d['surname']) for d in employees_dict], load_objs(f2))
+                self.assertListEqual(load_lists(f2),
+                                     [[d['name'], d['surname'], d['full_name']] for d in employees_dict])
+                self.assertListEqual(excel2dict(f2), employees_dict)
+                save_lists(f3, employees_list, fieldnames=['name', 'surname', 'full_name'])
+                self.assertListEqual(excel2dict(f3), employees_dict)
+                self.assertListEqual(load_dicts(f3), employees_dict)
+                self.assertListEqual([Employee(d['name'], d['surname']) for d in employees_dict], load_objs(f3))
+                self.assertListEqual(load_lists(f3), [[d['name'], d['surname'], d['full_name']] for d in employees_dict])
+
+        for files in [['object.csv', 'dicts.csv', 'lists.csv'],
+                      ['object.csv.gz', 'dicts.csv.gz', 'lists.csv.gz']]:
+            with removable_files(*files) as (f1, f2, f3):
+                save_objs(f1, employees)
+                self.assertListEqual(csv2dict(f1), employees_dict)
+                self.assertListEqual(load_dicts(f1), employees_dict)
+                self.assertListEqual([Employee(d['name'], d['surname']) for d in employees_dict], load_objs(f1))
+                self.assertListEqual(load_lists(f1), [[d['full_name'], d['name'], d['surname']] for d in employees_dict])
+                save_dicts(f2, employees_dict)
+                self.assertListEqual(csv2dict(f2), employees_dict)
+                self.assertListEqual([Employee(d['name'], d['surname']) for d in employees_dict], load_objs(f2))
+                self.assertListEqual(load_lists(f2),
+                                     [[d['name'], d['surname'], d['full_name']] for d in employees_dict])
+                self.assertListEqual(csv2dict(f2), employees_dict)
+                save_lists(f3, employees_list, fieldnames=['name', 'surname', 'full_name'])
+                self.assertListEqual(csv2dict(f3), employees_dict)
+                self.assertListEqual(load_dicts(f3), employees_dict)
+                self.assertListEqual([Employee(d['name'], d['surname']) for d in employees_dict], load_objs(f3))
+                self.assertListEqual(load_lists(f3), [[d['name'], d['surname'], d['full_name']] for d in employees_dict])
+
+    def test_equals(self) -> None:
+        with removable_files('test1.xlsx', 'test2.xlsx', 'test1.xls',
+                             'test1.csv', 'test1.csv.gz') as (f1, f2, f3, f4, f5):
+            save_objs(f1, employees)
+            save_objs(f2, employees)
+            self.assertTrue(equals(f1, f2))
+            save_objs(f2, objects)
+            self.assertFalse(equals(f1, f2))
+            save_objs(f3, employees)
+            self.assertTrue(equals(f1, f3))
+            save_objs(f3, objects)
+            self.assertFalse(equals(f1, f3))
+            save_objs(f4, employees)
+            self.assertTrue(equals(f1, f4))
+            save_objs(f4, objects)
+            self.assertFalse(equals(f1, f4))
+            save_objs(f5, employees)
+            self.assertTrue(equals(f1, f5))
+            save_objs(f5, objects)
+            self.assertFalse(equals(f1, f5))
+        # objects2excel('test_without_filenames.xlsx', objects)
         # os.remove('test_without_filenames.xlsx')
 
 

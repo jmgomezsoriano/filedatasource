@@ -166,7 +166,8 @@ def csv2dict(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8',
         return reader.read_rows()
 
 
-def csv2objects(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8',
+def csv2objects(file_or_io: Union[str, PathLike, TextIO, bytes, BinaryIO],
+                encoding: str = 'utf-8',
                 types: Union[List[Type], Dict[str, Type]] = None) -> List[object]:
     """ Read a CSV file (compressed or not) and return a list of objects.
 
@@ -179,37 +180,37 @@ def csv2objects(file_or_io: Union[str, TextIO, BinaryIO], encoding: str = 'utf-8
         return reader.read_objects()
 
 
-def excel2list(fname: str, sheet: Union[str, int] = 0) -> List[List[Any]]:
+def excel2list(filename: Union[PathLike, str, bytes], sheet: Union[str, int] = 0) -> List[List[Any]]:
     """ Read a Excel file (xlsx or xls) and return a list of lists with the file rows.
 
-    :param fname: The file path to the Excel file..
+    :param filename: The file path to the Excel file.
     :param sheet: The sheet name or the sheet number (starting by 0).
     :return: A List of lists with the file rows. Each column value is stored as list element.
     """
-    with ExcelReader(fname, sheet, ReadMode.LIST) as reader:
+    with ExcelReader(filename, sheet, ReadMode.LIST) as reader:
         return reader.read_lists()
 
 
-def excel2dict(fname: str, sheet: Union[str, int] = 0) -> List[Dict]:
-    """ Read a Excel file (xlsx or xls) and return a list of dictionaries with the file content..
+def excel2dict(filename: Union[PathLike, str, bytes], sheet: Union[str, int] = 0) -> List[Dict]:
+    """ Read a Excel file (xlsx or xls) and return a list of dictionaries with the file content.
 
-    :param fname: The file path to the Excel file.
+    :param filename: The file path to the Excel file.
     :param sheet: The sheet name or the sheet number (starting by 0).
     :return: A list of dictionaries. Each dictionary represents a row and it contains as keys the column name and
     its value the column value.
     """
-    with ExcelReader(fname, sheet, ReadMode.DICT) as reader:
+    with ExcelReader(filename, sheet, ReadMode.DICT) as reader:
         return reader.read_rows()
 
 
-def excel2objects(fname: str, sheet: Union[str, int] = 0) -> List[object]:
+def excel2objects(filename: Union[PathLike, str, bytes], sheet: Union[str, int] = 0) -> List[object]:
     """ Read a Excel file (xlsx or xls) and return a list of objects.
 
-    :param fname: The file path to the Excel file.
+    :param filename: The file path to the Excel file.
     :param sheet: The sheet name or the sheet number (starting by 0).
     :return: A list of objects. Each object is a file row with the attributes as column names and its value.
     """
-    with ExcelReader(fname, sheet, ReadMode.OBJECT) as reader:
+    with ExcelReader(filename, sheet, ReadMode.OBJECT) as reader:
         return reader.read_objects()
 
 
@@ -327,75 +328,24 @@ def convert(fr_file: str, to_file) -> None:
             writer.import_reader(reader)
 
 
-def file2dict(filename: Union[PathLike, str, bytes]) -> dict:
-    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
-        return csv2dict(filename)
-    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
-        return excel2dict(filename)
-    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
-
-
-def file2objects(filename: Union[PathLike, str, bytes]) -> dict:
-    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
-        return csv2objects(filename)
-    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
-        return excel2objects(filename)
-    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
-
-
-def file2list(filename: Union[PathLike, str, bytes]) -> dict:
-    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
-        return csv2list(filename)
-    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
-        return excel2list(filename)
-    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
-
-
-def list2file(filename: Union[PathLike, str, bytes],
-              data: List[list],
-              fieldnames: Union[List[str], type, object, None]) -> None:
-    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
-        return list2csv(filename, data, fieldnames)
-    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
-        return list2excel(filename, data, fieldnames=fieldnames)
-    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
-
-
-def dict2file(filename: Union[PathLike, str, bytes],
-              data: List[dict],
-              fieldnames: Union[List[str], type, object, None] = None) -> None:
-    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
-        return dict2csv(filename, data, fieldnames)
-    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
-        return dict2excel(filename, data, fieldnames=fieldnames)
-    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
-
-
-def objects2file(filename: Union[PathLike, str, bytes],
-              data: List[object],
-              fieldnames: Union[List[str], type, object, None] = None) -> None:
-    if filename.lower().endswith('.csv') or filename.lower().endswith('.csv.gz'):
-        return objects2csv(filename, data, fieldnames)
-    if filename.lower().endswith('.xls') or filename.lower().endswith('.xlsx'):
-        return objects2excel(filename, data, fieldnames=fieldnames)
-    raise DataSourceError('This function only works with files with .csv, .csv.gz, .xls or .xlsx extensions.')
-
-
 def equals(filename1: Union[PathLike, str, bytes], filename2: Union[PathLike, str, bytes]) -> bool:
-    """ Check if two file data sources have the same content.
+    """ Check if two file data sources have the same content independently if they are the same file type or different.
+      However, if one of the files are CSV and the other Excel, and some columns are not strings,
+      the comparison are going to fail. It is better to compare the same type of files or
+      to work only with strings to be sure the comparison is correct.
 
-    :param filename1:
-    :param filename2:
-    :return:
+    :param filename1: The first file to compare with.
+    :param filename2: The second file to compare with.
+    :return:True if the content is the same, False otherwise.
     """
     # Load the files
-    dict1, dict2 = file2dict(filename1), file2dict(filename2)
+    dict1, dict2 = load_dicts(filename1), load_dicts(filename2)
     # Check if both lists of dictionaries has the same length
     if len(dict1) != len(dict2):
         return False
     # Check each of the element of the dictionaries
-    for i, d1 in enumerate(dict1):
-        for key, value in d1:
-            if d1[key] != dict2[i][key]:
+    for i, d in enumerate(dict1):
+        for key, value in d.items():
+            if key not in dict2[i] or d[key] != dict2[i][key]:
                 return False
     return True
