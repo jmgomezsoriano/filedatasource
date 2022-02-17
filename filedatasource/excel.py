@@ -144,7 +144,11 @@ class ExcelReader(ExcelData, DataReader):
         if fname.lower().endswith('.xlsx'):
             self.__doc = open_xlsx(fname)
             self._sheet = self.__doc[sheet] if isinstance(sheet, str) else self.__doc[self.__doc.sheetnames[sheet]]
-            self._fieldnames = [cell.value for cell in next(self.sheet.rows)]
+            self._fieldnames = [cell.value for cell in next(self.sheet.rows) if cell.value]
+            self.__iter_rows = self.sheet.iter_rows(values_only=True,
+                                                    max_col=len(self.fieldnames),
+                                                    max_row=self.sheet.max_row)
+            next(self.__iter_rows)
             self.__type = 'xlsx'
         elif fname.lower().endswith('.xls'):
             doc = open_xls(fname)
@@ -180,7 +184,9 @@ class ExcelReader(ExcelData, DataReader):
         :param sheet: The sheet to write the row.
         :return: A dict with the fieldnames as keys.
         """
-        return {self.fieldnames[i]: sheet.cell(row=self.__row, column=i + 1).value for i in range(sheet.max_column)}
+        row = next(self.__iter_rows)
+        return {self.fieldnames[i]: value for i, value in enumerate(row)}
+        # return {self.fieldnames[i]: sheet.cell(row=self.__row, column=i + 1).value for i in range(sheet.max_column)}
 
     def __read_xls_row(self, sheet) -> dict:
         """ Write a row using xlrd module.

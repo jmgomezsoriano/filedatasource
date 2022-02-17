@@ -6,6 +6,8 @@ pip install -r requirements.txt
 """
 import os
 import unittest
+from random import randint
+from time import perf_counter
 from typing import List
 
 from mysutils.tmp import removable_files
@@ -630,6 +632,20 @@ class MyTestCase(unittest.TestCase):
             self.assertFalse(equals(f1, f5))
         # objects2excel('test_without_filenames.xlsx', objects)
         # os.remove('test_without_filenames.xlsx')
+
+    def test_big_files(self) -> None:
+        for file in ['big_file.xlsx', 'big_file.xls']:
+            with removable_files(file):
+                begin = perf_counter()
+                fieldnames = [chr(c) for c in range(65, 91)]
+                with ExcelWriter(file, fieldnames=fieldnames) as writer:
+                    for i in range(1000):
+                        writer.write_list([randint(1, 1000000) for _ in fieldnames])
+                print(f'Total time for write {file}: {perf_counter() - begin:.2f}s')
+                begin = perf_counter()
+                excel2dict(file)
+                print(f'Total time for read {file}: {perf_counter() - begin:.2f}s')
+                self.assertLess(perf_counter() - begin, 10)
 
 
 if __name__ == '__main__':
