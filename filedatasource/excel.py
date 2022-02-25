@@ -135,8 +135,8 @@ class ExcelReader(ExcelData, DataReader):
         :param fname: The file path to the Excel file.
         :param sheet: The sheet to read/write.
         :param mode: The default mode to read the rows. When the reader is iterated,
-        it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
-        ReadMode.DICTIONARY or ReadMode.LIST, respectively.
+           it will return objects, dictionaries or lists depending on if the value of this parameter is ReadMode.OBJECT,
+           ReadMode.DICTIONARY or ReadMode.LIST, respectively.
         :raises ValueError: If the file name is not a CSV (compressed or not) or Excel (XLSX, XLS) file.
         """
         super(ExcelReader, self).__init__(fname, sheet=sheet)
@@ -144,7 +144,7 @@ class ExcelReader(ExcelData, DataReader):
         if fname.lower().endswith('.xlsx'):
             self.__doc = open_xlsx(fname)
             self._sheet = self.__doc[sheet] if isinstance(sheet, str) else self.__doc[self.__doc.sheetnames[sheet]]
-            self._fieldnames = [cell.value for cell in next(self.sheet.rows) if cell.value]
+            self._fieldnames = self.remove_empty_cells([cell.value for cell in next(self.sheet.rows)])
             self.__iter_rows = self.sheet.iter_rows(values_only=True,
                                                     max_col=len(self.fieldnames),
                                                     max_row=self.sheet.max_row)
@@ -160,6 +160,13 @@ class ExcelReader(ExcelData, DataReader):
             raise ValueError(f'The file name {fname} has to end in .xls or .xlsx.')
 
         self.__row = 1
+
+    def remove_empty_cells(self, cells: List[str]) -> List[str]:
+        for i in range(len(cells) - 1, -1, -1):
+            if cells[i] is not None:
+                return cells
+            del self._fieldnames[i]
+        return cells
 
     def read_row(self) -> dict:
         """ Read a row of the Excel file as a dict.
@@ -184,9 +191,11 @@ class ExcelReader(ExcelData, DataReader):
         :param sheet: The sheet to write the row.
         :return: A dict with the fieldnames as keys.
         """
+        # return {self.fieldnames[i]: sheet.cell(row=self.__row, column=i + 1).value for i in range(len(self._fieldnames))}
         row = next(self.__iter_rows)
-        return {self.fieldnames[i]: value for i, value in enumerate(row)}
-        # return {self.fieldnames[i]: sheet.cell(row=self.__row, column=i + 1).value for i in range(sheet.max_column)}
+        # return {self.fieldnames[i]: cell.value for i, cell in enumerate(row)}
+        # row = next(self.sheet.rows)
+        return {self.fieldnames[i]: value for i, value in enumerate(row) if i < len(self._fieldnames)}
 
     def __read_xls_row(self, sheet) -> dict:
         """ Write a row using xlrd module.
